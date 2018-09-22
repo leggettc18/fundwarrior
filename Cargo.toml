@@ -1,0 +1,6 @@
+[package]
+name = "fund"
+version = "0.1.0"
+authors = ["Christopher Leggett <leggettc18@gmail.com>"]
+
+[dependencies]
