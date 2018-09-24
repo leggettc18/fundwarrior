@@ -48,6 +48,14 @@ impl Fund {
         }
         Err("can't find a fund with that name")
     }
+
+    pub fn goal_status(&self) {
+        if self.amount >= self.goal {
+            println!("Your goal of ${} has been acheived for fund {}", self.goal, self.name);
+        } else {
+            println!("Fund {} is ${} away from its ${} goal", self.name, self.goal - self.amount, self.goal);
+        }
+    }
 }
 
 
