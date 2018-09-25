@@ -1,13 +1,103 @@
-use std::env;
-use std::io;
+extern crate dirs;
+
 use std::io::prelude::*;
 use std::fs::OpenOptions;
 use std::io::{BufReader, BufWriter};
-
+use std::path::PathBuf;
+use std::error::Error;
 
 pub struct Config {
-    pub configfile: String,
-    pub fundfile: String,
+    pub configfile: PathBuf,
+    pub fundfile: PathBuf,
+    pub command: Option<String>,
+    pub fund_name: Option<String>,
+    pub amount: Option<f64>,
+    pub goal: Option<f64>,
+}
+
+impl Config {
+    pub fn new(args: &[String]) -> Config {
+        let mut configfile: PathBuf = dirs::config_dir().unwrap();
+        configfile.push(PathBuf::from(r"fund/config"));
+        let mut fundfile: PathBuf = dirs::home_dir().unwrap();
+        fundfile.push(r".fundrc");
+
+        let command = if args.len() > 1 { 
+            Some(args[1].clone())
+        } else {
+            None
+        };
+        let fund_name = if args.len() > 2 { 
+            Some(args[2].clone())
+        } else {
+            None
+        };
+        let amount = if args.len() > 3 { 
+            Some(args[3].clone().parse().unwrap())
+        } else {
+            None
+        };
+        let goal = if args.len() > 4 {
+            Some(args[4].clone().parse().unwrap())
+        } else {
+            None
+        };
+
+        Config { configfile, fundfile, command, fund_name, amount, goal }
+    }
+}
+
+pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
+    let command = config.command.clone();
+    let fund_name = config.fund_name.clone();
+    let amount = config.amount.clone();
+    let goal = config.goal.clone();
+    let mut funds: Vec<Fund> = Fund::load(&config)?;
+
+    match command {
+        None => Fund::print_all(&funds),
+        Some(command) => {
+            match command.as_ref() {
+                "list" => {
+                    match fund_name {
+                        Some(name) => Fund::get_by_name(&mut funds, name)?.print_details(),
+                        None => Fund::print_all(&funds),
+                    }
+                },
+                "new" => {
+                    match fund_name {
+                        Some(name) => funds.push(Fund::new(name, amount, goal)?),
+                        None => return Err(From::from("can't create a new struct with no name")),
+                    }
+                },
+                "spend" => {
+                    match fund_name {
+                        Some(name) => {
+                            match amount {
+                                Some(amount) => Fund::get_by_name(&mut funds, name)?.spend(amount),
+                                None => return Err(From::from("please supply an amount to spend")),
+                            }
+                        }
+                        None => return Err(From::from("please supply a fund to spend from")),
+                    }
+                },
+                "deposit" => {
+                    match fund_name {
+                        Some(name) => {
+                            match amount {
+                                Some(amount) => Fund::get_by_name(&mut funds, name)?.deposit(amount),
+                                None => return Err(From::from("please supply an amount to deposit")),
+                            }
+                        }
+                        None => return Err(From::from("please supply a fund to deposit to")),
+                    }
+                },
+                _ => return Err(From::from("not a valid command")),
+            }
+        }
+    }
+
+    Fund::save(&funds, &config)
 }
 
 struct Fund {
@@ -42,7 +132,7 @@ impl Fund {
         fund.deposit(amount);
     }
 
-    pub fn get_by_name(funds: Vec<Fund>, name: String) -> Result<Fund, &'static str> {
+    pub fn get_by_name(funds: &mut Vec<Fund>, name: String) -> Result<&mut Fund, &'static str> {
         for fund in funds {
             if fund.name == name {
                 return Ok(fund);
@@ -73,8 +163,9 @@ impl Fund {
         }
     }
 
-    pub fn save(funds: &Vec<Fund>, config: Config) -> std::io::Result<()> {
-        let file = OpenOptions::new().write(true).create(true).open(config.fundfile)?;
+    pub fn save(funds: &Vec<Fund>, config: &Config) -> Result<(), Box<Error+Send+Sync>> {
+        let fundfile = config.fundfile.clone();
+        let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
         let mut buf_writer = BufWriter::new(file);
         for fund in funds {
             let string = format!("{}:{:.2}:{:.2}\r\n", fund.name, fund.amount, fund.goal);
@@ -83,8 +174,9 @@ impl Fund {
         Ok(())
     }
 
-    pub fn load(config: Config) -> std::io::Result<Vec<Fund>> {
-        let file = OpenOptions::new().read(true).open(config.fundfile)?;
+    pub fn load(config: &Config) -> std::io::Result<Vec<Fund>> {
+        let fundfile = config.fundfile.clone();
+        let file = OpenOptions::new().read(true).open(fundfile)?;
         let mut funds: Vec<Fund> = Vec::new();
         let buf_reader = BufReader::new(file);
 
