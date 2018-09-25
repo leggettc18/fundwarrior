@@ -150,11 +150,11 @@ impl Fund {
     }
 
     pub fn print_details(&self) {
-        println!("{:10} | ${:6.2} | ${:6.2}", self.name, self.amount, self.goal);
+        println!("{:10} | ${:<10.2} | ${:<10.2}", self.name, self.amount, self.goal);
     }
 
     pub fn print_all(funds: &Vec<Fund>) {
-        println!("{:10} | {:6.2} | {:6.2}", "Name", "Amount", "Goal");
+        println!("{:10} | {:11} | {:11}", "Name", "Amount", "Goal");
         for fund in funds {
             fund.print_details();
         }
@@ -176,7 +176,7 @@ impl Fund {
 
     pub fn load(config: &Config) -> std::io::Result<Vec<Fund>> {
         let fundfile = config.fundfile.clone();
-        let file = OpenOptions::new().read(true).open(fundfile)?;
+        let file = OpenOptions::new().read(true).write(true).create(true).open(fundfile)?;
         let mut funds: Vec<Fund> = Vec::new();
         let buf_reader = BufReader::new(file);
 
