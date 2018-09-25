@@ -63,6 +63,7 @@ This is a WIP and currently in a rough state. Code is messy at points and presen
 ## TODO
 
 - Add documentation comments
+- Add more configuration options that can be parsed from the config file
 - Refactor code to improve clarity and argument flexibility
 - Add a command to transfer money between accounts
 - Add spending history functionality
