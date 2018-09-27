@@ -5,3 +5,4 @@ authors = ["Christopher Leggett <leggettc18@gmail.com>"]
 
 [dependencies]
 dirs = "1.0.4"
+clap = "~2.32"

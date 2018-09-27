@@ -1,17 +1,73 @@
+extern crate clap;
 extern crate fund;
 
 use std::env;
 use std::process;
 
+use clap::{Arg, App, SubCommand};
 use fund::Config;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let matches = App::new("fundwarrior")
+                        .version("0.5")
+                        .author("Christopher Leggett <leggettc18@gmail.com>")
+                        .about("Simple CLI Money Management")
+                        .arg(Arg::with_name("config")
+                            .short("c")
+                            .long("config")
+                            .value_name("FILE")
+                            .help("Sets a custom config file")
+                            .takes_value(true))
+                        .arg(Arg::with_name("verbose")
+                            .short("v")
+                            .long("verbose")
+                            .help("Enables verbose output"))
+                        .subcommand(SubCommand::with_name("new")
+                            .about("Creates a new fund")
+                            .arg(Arg::with_name("name")
+                                .help("The name of the fund to create")
+                                .required(true))
+                            .arg(Arg::with_name("amount")
+                                .help("The amount to start the fund with")
+                                .required(false))
+                            .arg(Arg::with_name("goal")
+                                .help("The amount you want this fund to have in the future")
+                                .required(false)))
+                        .subcommand(SubCommand::with_name("deposit")
+                            .about("Deposit money into a fund")
+                            .arg(Arg::with_name("name")
+                                .help("The name of the fund you are depositing into")
+                                .required(true))
+                            .arg(Arg::with_name("amount")
+                                .help("The amount you wish to deposit")
+                                .required(true)))
+                        .subcommand(SubCommand::with_name("spend")
+                            .about("Spend money from a fund")
+                            .arg(Arg::with_name("name")
+                                .help("The name of the fund you are spending from")
+                                .required(true))
+                            .arg(Arg::with_name("amount")
+                                .help("The amount you are spending")
+                                .required(true)))
+                        .subcommand(SubCommand::with_name("list")
+                            .about("List fund details")
+                            .arg(Arg::with_name("name")
+                                .help("The name of the fund you wish to view")
+                                .required(false)))
+                        .get_matches();
 
-    let config = Config::new(&args);
+    let config = Config::new(matches);
 
-    if let Err(e) = fund::run(config) {
-        eprintln!("Application error {}", e);
-        process::exit(1);
+    match config {
+        Err(e) => {
+            eprintln!("Error parsing arguments: {}", e);
+            process::exit(1);
+        },
+        Ok(config)=> {
+            if let Err(e) = fund::run(config) {
+                eprintln!("Application error {}", e);
+                process::exit(1);
+            }
+        }
     }
 }

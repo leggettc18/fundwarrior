@@ -1,10 +1,13 @@
 extern crate dirs;
+extern crate clap;
 
 use std::io::prelude::*;
 use std::fs::OpenOptions;
 use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 use std::error::Error;
+
+use clap::ArgMatches;
 
 pub struct Config {
     pub configfile: PathBuf,
@@ -16,34 +19,61 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(args: &[String]) -> Config {
+    pub fn new(matches: ArgMatches) -> Result<Config, Box<Error>> {
         let mut configfile: PathBuf = dirs::config_dir().unwrap();
         configfile.push(PathBuf::from(r"fund/config"));
         let mut fundfile: PathBuf = dirs::home_dir().unwrap();
         fundfile.push(r".fundrc");
 
-        let command = if args.len() > 1 { 
-            Some(args[1].clone())
-        } else {
-            None
-        };
-        let fund_name = if args.len() > 2 { 
-            Some(args[2].clone())
-        } else {
-            None
-        };
-        let amount = if args.len() > 3 { 
-            Some(args[3].clone().parse().unwrap())
-        } else {
-            None
-        };
-        let goal = if args.len() > 4 {
-            Some(args[4].clone().parse().unwrap())
+        let mut command = None;
+        let mut fund_name = None;
+        let mut amount = None;
+        let mut goal = None;
+
+        match matches.subcommand() {
+            ("new", Some(new_matches)) => {
+                command = Some(String::from("new"));
+                fund_name = new_matches.value_of("name");
+                amount = new_matches.value_of("amount");
+                goal = new_matches.value_of("goal");
+            },
+            ("deposit", Some(deposit_matches)) => {
+                command = Some(String::from("deposit"));
+                fund_name = deposit_matches.value_of("name");
+                amount = deposit_matches.value_of("amount");
+            },
+            ("spend", Some(spend_matches)) => {
+                command = Some(String::from("spend"));
+                fund_name = spend_matches.value_of("name");
+                amount = spend_matches.value_of("amount");
+            },
+            ("list", Some(list_matches)) => {
+                command = Some(String::from("list"));
+                fund_name = list_matches.value_of("name");
+            },
+            ("", None) => command = Some(String::from("list")),
+            _ => unreachable!(),
+        }
+
+        let fund_name = if fund_name.is_some() {
+            Some(String::from(fund_name.unwrap()))
         } else {
             None
         };
 
-        Config { configfile, fundfile, command, fund_name, amount, goal }
+        let amount = if amount.is_some() {
+            Some(amount.unwrap().parse::<f64>()?)
+        } else {
+            None
+        };
+
+        let goal = if goal.is_some() {
+            Some(goal.unwrap().parse::<f64>()?)
+        } else {
+            None
+        };
+
+        Ok(Config { configfile, fundfile, command, fund_name, amount, goal })
     }
 }
 
