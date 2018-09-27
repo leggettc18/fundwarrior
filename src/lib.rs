@@ -211,7 +211,7 @@ impl Fund {
         let buf_reader = BufReader::new(file);
 
         for line in buf_reader.lines() {
-            let line = line.unwrap();
+            let line = line?;
             let fund_info: Vec<&str> = line.split_terminator(":").collect();
             let name: String = fund_info[0].parse()?;
             let amount: f64 = fund_info[1].parse()?;
