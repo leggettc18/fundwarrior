@@ -1,7 +1,6 @@
 extern crate clap;
 extern crate fund;
 
-use std::env;
 use std::process;
 
 use clap::{Arg, App, SubCommand};
