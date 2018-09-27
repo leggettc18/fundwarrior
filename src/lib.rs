@@ -23,7 +23,7 @@ impl Config {
         let mut configfile: PathBuf = dirs::config_dir().unwrap();
         configfile.push(PathBuf::from(r"fund/config"));
         let mut fundfile: PathBuf = dirs::home_dir().unwrap();
-        fundfile.push(r".fundrc");
+        fundfile.push(r".fund");
 
         let mut command = None;
         let mut fund_name = None;
