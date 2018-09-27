@@ -204,18 +204,33 @@ impl Fund {
         Ok(())
     }
 
-    pub fn load(config: &Config) -> std::io::Result<Vec<Fund>> {
+    pub fn load(config: &Config) -> Result<Vec<Fund>, Box<Error+Send+Sync>> {
         let fundfile = config.fundfile.clone();
         let file = OpenOptions::new().read(true).write(true).create(true).open(fundfile)?;
         let mut funds: Vec<Fund> = Vec::new();
         let buf_reader = BufReader::new(file);
 
         for line in buf_reader.lines() {
-            let line = line.unwrap();
+            let line = line?;
             let fund_info: Vec<&str> = line.split_terminator(":").collect();
-            let name: String = fund_info[0].parse().unwrap();
-            let amount: f64 = fund_info[1].parse().unwrap();
-            let goal: f64 = fund_info[2].parse().unwrap();
+            let name: String = match fund_info[0].parse() {
+                Ok(name) => name,
+                Err(e) => {
+                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+                }
+            };
+            let amount: f64 = match fund_info[1].parse() {
+                Ok(amount) => amount,
+                Err(e) => {
+                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+                }
+            };
+            let goal: f64 = match fund_info[2].parse() {
+                Ok(goal) => goal,
+                Err(e) => {
+                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+                }
+            };
             funds.push( Fund{ name, amount, goal });
         }
 
