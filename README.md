@@ -15,6 +15,9 @@ $100 in it with a "goal" of $150 with the following command.
 fund new grocery 100.00 150.00
 ```
 
+Currently the names are case-sensitive and cannot
+contain any spaces.
+
 You can then view this fund at any time with the command.
 
 ```
