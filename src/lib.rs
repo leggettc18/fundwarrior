@@ -204,7 +204,7 @@ impl Fund {
         Ok(())
     }
 
-    pub fn load(config: &Config) -> std::io::Result<Vec<Fund>> {
+    pub fn load(config: &Config) -> Result<Vec<Fund>, Box<Error+Send+Sync>> {
         let fundfile = config.fundfile.clone();
         let file = OpenOptions::new().read(true).write(true).create(true).open(fundfile)?;
         let mut funds: Vec<Fund> = Vec::new();
@@ -213,9 +213,9 @@ impl Fund {
         for line in buf_reader.lines() {
             let line = line.unwrap();
             let fund_info: Vec<&str> = line.split_terminator(":").collect();
-            let name: String = fund_info[0].parse().unwrap();
-            let amount: f64 = fund_info[1].parse().unwrap();
-            let goal: f64 = fund_info[2].parse().unwrap();
+            let name: String = fund_info[0].parse()?;
+            let amount: f64 = fund_info[1].parse()?;
+            let goal: f64 = fund_info[2].parse()?;
             funds.push( Fund{ name, amount, goal });
         }
 
