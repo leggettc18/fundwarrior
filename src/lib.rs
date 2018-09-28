@@ -171,14 +171,22 @@ impl Fund {
 
     pub fn print_goal_status(&self) {
         if self.amount >= self.goal {
-            println!("Your goal of ${} has been acheived for fund {}", self.goal, self.name);
+            println!("Your goal of {} has been acheived for fund {}", self.goal, self.name);
         } else {
-            println!("Fund {} is ${} away from its ${} goal", self.name, self.goal - self.amount, self.goal);
+            println!("Fund {} is {} away from its {} goal", self.name, 
+                Fund::display_dollars(self.goal - self.amount), Fund::display_dollars(self.goal));
         }
     }
 
     pub fn print_details(&self) {
-        println!("{:10} | ${:<10.2} | ${:<10.2}", self.name, self.amount, self.goal);
+        println!("{:10} | {:<10} | {:<10}", self.name, 
+            Fund::display_dollars(self.amount), Fund::display_dollars(self.goal));
+    }
+
+    fn display_dollars(amount: i32) -> String {
+        let amount = amount.to_string();
+        let (dollars, cents) = amount.split_at(amount.len()-2);
+        String::from(format!("${}.{}", dollars, cents))
     }
 
     pub fn print_all(funds: &Vec<Fund>) {
