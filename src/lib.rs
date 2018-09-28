@@ -161,12 +161,12 @@ impl Fund {
     }
 
     pub fn get_by_name(funds: &mut Vec<Fund>, name: String) -> Result<&mut Fund, &'static str> {
-        for fund in funds {
-            if fund.name == name {
-                return Ok(fund);
-            }
+        let query = Fund::new(name, None, None)?;
+        let index = funds.iter().position(|x| x.eq(&query));
+        match index {
+            Some(x) => Ok(&mut funds[x]),
+            None => Err("can't find a fund with that name"),
         }
-        Err("can't find a fund with that name")
     }
 
     pub fn print_goal_status(&self) {
@@ -243,6 +243,12 @@ impl Fund {
         Ok(funds)
     }
 
+}
+
+impl PartialEq for Fund {
+    fn eq (&self, x: &Fund) -> bool {
+        x.name == self.name
+    }
 }
 
 
