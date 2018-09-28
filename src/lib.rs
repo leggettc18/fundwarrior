@@ -197,7 +197,12 @@ impl FundManager {
     }
 
     pub fn add_fund(&mut self, name: String, amount: Option<i32>, goal: Option<i32>) -> Result<(), Box<Error+Send+Sync>> {
-        self.funds.push(Fund::new(name, amount, goal)?);
+        let fund = Fund::new(name, amount, goal)?;
+        if self.funds.contains(&fund)
+        {
+            return Err(From::from(format!("fund '{}' already exists. Please choose a different name", fund.name)));
+        }
+        self.funds.push(fund);
         Ok(())
     }
 }
