@@ -14,12 +14,12 @@ pub struct Config {
     pub fundfile: PathBuf,
     pub command: Option<String>,
     pub fund_name: Option<String>,
-    pub amount: Option<f64>,
-    pub goal: Option<f64>,
+    pub amount: Option<i32>,
+    pub goal: Option<i32>,
 }
 
 impl Config {
-    pub fn new(matches: ArgMatches) -> Result<Config, Box<Error>> {
+    pub fn new(matches: ArgMatches) -> Result<Config, Box<Error+Send+Sync>> {
         let mut configfile: PathBuf = dirs::config_dir().unwrap();
         configfile.push(PathBuf::from(r"fund/config"));
         let mut fundfile: PathBuf = dirs::home_dir().unwrap();
@@ -55,22 +55,20 @@ impl Config {
             _ => unreachable!(),
         }
 
-        let fund_name = if fund_name.is_some() {
-            Some(String::from(fund_name.unwrap()))
-        } else {
-            None
+        let fund_name = fund_name.map_or(None, |x| Some(String::from(x)));
+
+        let amount = match amount {
+            Some(x) => {
+                Some(x.replace(".", "").parse::<i32>()?)
+            },
+            None => None,
         };
 
-        let amount = if amount.is_some() {
-            Some(amount.unwrap().parse::<f64>()?)
-        } else {
-            None
-        };
-
-        let goal = if goal.is_some() {
-            Some(goal.unwrap().parse::<f64>()?)
-        } else {
-            None
+        let goal = match goal {
+            Some(x) => {
+                Some(x.replace(".", "").parse::<i32>()?)
+            },
+            None => None,
         };
 
         Ok(Config { configfile, fundfile, command, fund_name, amount, goal })
@@ -132,32 +130,32 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
 
 struct Fund {
     name: String,
-    amount: f64,
-    goal: f64,
+    amount: i32,
+    goal: i32,
 }
 
 impl Fund {
-    pub fn new(name: String, amount: Option<f64>, goal: Option<f64>) -> Result<Fund, &'static str> {
+    pub fn new(name: String, amount: Option<i32>, goal: Option<i32>) -> Result<Fund, &'static str> {
         if String::from(name.trim()).is_empty() {
             return Err("fund name cannot be blank");
         } else {
             Ok(Fund {
                 name,
-                amount: amount.unwrap_or(0.0),
-                goal: goal.unwrap_or(0.0),
+                amount: amount.unwrap_or(0),
+                goal: goal.unwrap_or(0),
             })
         }
     }
 
-    pub fn spend(&mut self, amount: f64) {
+    pub fn spend(&mut self, amount: i32) {
         self.amount -= amount;
     }
 
-    pub fn deposit(&mut self, amount: f64) {
+    pub fn deposit(&mut self, amount: i32) {
         self.amount += amount;
     }
 
-    pub fn transfer_to(&mut self, fund: &mut Fund, amount: f64) {
+    pub fn transfer_to(&mut self, fund: &mut Fund, amount: i32) {
         self.spend(amount);
         fund.deposit(amount);
     }
@@ -173,14 +171,22 @@ impl Fund {
 
     pub fn print_goal_status(&self) {
         if self.amount >= self.goal {
-            println!("Your goal of ${} has been acheived for fund {}", self.goal, self.name);
+            println!("Your goal of {} has been acheived for fund {}", self.goal, self.name);
         } else {
-            println!("Fund {} is ${} away from its ${} goal", self.name, self.goal - self.amount, self.goal);
+            println!("Fund {} is {} away from its {} goal", self.name, 
+                Fund::display_dollars(self.goal - self.amount), Fund::display_dollars(self.goal));
         }
     }
 
     pub fn print_details(&self) {
-        println!("{:10} | ${:<10.2} | ${:<10.2}", self.name, self.amount, self.goal);
+        println!("{:10} | {:<10} | {:<10}", self.name, 
+            Fund::display_dollars(self.amount), Fund::display_dollars(self.goal));
+    }
+
+    fn display_dollars(amount: i32) -> String {
+        let amount = amount.to_string();
+        let (dollars, cents) = amount.split_at(amount.len()-2);
+        String::from(format!("${}.{}", dollars, cents))
     }
 
     pub fn print_all(funds: &Vec<Fund>) {
@@ -219,13 +225,13 @@ impl Fund {
                     return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
                 }
             };
-            let amount: f64 = match fund_info[1].parse() {
+            let amount: i32 = match fund_info[1].parse() {
                 Ok(amount) => amount,
                 Err(e) => {
                     return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
                 }
             };
-            let goal: f64 = match fund_info[2].parse() {
+            let goal: i32 = match fund_info[2].parse() {
                 Ok(goal) => goal,
                 Err(e) => {
                     return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
@@ -249,12 +255,12 @@ mod tests {
     fn create_fund() {
         let fund = Fund::new(String::from("Test"), None, None).unwrap();
         assert_eq!(fund.name, "Test");
-        assert_eq!(fund.amount, 0.0);
-        assert_eq!(fund.goal, 0.0);
-        let fund_with_args = Fund::new(String::from("Test"), Some(50.0), Some(100.0)).unwrap();
+        assert_eq!(fund.amount, 0);
+        assert_eq!(fund.goal, 0);
+        let fund_with_args = Fund::new(String::from("Test"), Some(500), Some(1000)).unwrap();
         assert_eq!(fund_with_args.name, "Test");
-        assert_eq!(fund_with_args.amount, 50.0);
-        assert_eq!(fund_with_args.goal, 100.0);
+        assert_eq!(fund_with_args.amount, 500);
+        assert_eq!(fund_with_args.goal, 1000);
     }
 
     #[test]
@@ -265,14 +271,14 @@ mod tests {
 
     #[test]
     fn fund_deposit() {
-        let mut fund = Fund::new(String::from("Test"), Some(50.0), Some(100.0)).unwrap();
-        fund.deposit(50.0);
-        assert_eq!(fund.amount, 100.0);
+        let mut fund = Fund::new(String::from("Test"), Some(500), Some(1000)).unwrap();
+        fund.deposit(500);
+        assert_eq!(fund.amount, 1000);
     }
     #[test]
     fn fund_spend() {
-        let mut fund = Fund::new(String::from("Test"), Some(50.0), Some(100.0)).unwrap();
-        fund.spend(25.0);
-        assert_eq!(fund.amount, 25.0);
+        let mut fund = Fund::new(String::from("Test"), Some(500), Some(1000)).unwrap();
+        fund.spend(250);
+        assert_eq!(fund.amount, 250);
     }
 }
