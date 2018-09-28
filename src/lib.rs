@@ -80,21 +80,21 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
     let fund_name = config.fund_name.clone();
     let amount = config.amount.clone();
     let goal = config.goal.clone();
-    let mut funds: Vec<Fund> = Fund::load(&config)?;
+    let mut funds = FundManager::load(&config)?;
 
     match command {
-        None => Fund::print_all(&funds),
+        None => funds.print_all(),
         Some(command) => {
             match command.as_ref() {
                 "list" => {
                     match fund_name {
-                        Some(name) => Fund::get_by_name(&mut funds, name)?.print_details(),
-                        None => Fund::print_all(&funds),
+                        Some(name) => funds.get_fund_by_name(name)?.print_details(),
+                        None => funds.print_all(),
                     }
                 },
                 "new" => {
                     match fund_name {
-                        Some(name) => funds.push(Fund::new(name, amount, goal)?),
+                        Some(name) => funds.add_fund(name, amount, goal)?,
                         None => return Err(From::from("can't create a new struct with no name")),
                     }
                 },
@@ -102,7 +102,7 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
                     match fund_name {
                         Some(name) => {
                             match amount {
-                                Some(amount) => Fund::get_by_name(&mut funds, name)?.spend(amount),
+                                Some(amount) => funds.get_fund_by_name(name)?.spend(amount),
                                 None => return Err(From::from("please supply an amount to spend")),
                             }
                         }
@@ -113,7 +113,7 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
                     match fund_name {
                         Some(name) => {
                             match amount {
-                                Some(amount) => Fund::get_by_name(&mut funds, name)?.deposit(amount),
+                                Some(amount) => funds.get_fund_by_name(name)?.deposit(amount),
                                 None => return Err(From::from("please supply an amount to deposit")),
                             }
                         }
@@ -125,9 +125,89 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
         }
     }
 
-    Fund::save(&funds, &config)
+    funds.save(&config)
 }
 
+struct FundManager {
+    funds: Vec<Fund>,
+}
+
+impl FundManager {
+    pub fn load(config: &Config) -> Result<FundManager, Box<Error+Send+Sync>> {
+        let fundfile = config.fundfile.clone();
+        let file = OpenOptions::new().read(true).write(true).create(true).open(fundfile)?;
+        let mut funds: Vec<Fund> = Vec::new();
+        let buf_reader = BufReader::new(file);
+
+        for line in buf_reader.lines() {
+            let line = line?;
+            let fund_info: Vec<&str> = line.split_terminator(":").collect();
+            let name: String = match fund_info[0].parse() {
+                Ok(name) => name,
+                Err(e) => {
+                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+                }
+            };
+            let amount: i32 = match fund_info[1].parse() {
+                Ok(amount) => amount,
+                Err(e) => {
+                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+                }
+            };
+            let goal: i32 = match fund_info[2].parse() {
+                Ok(goal) => goal,
+                Err(e) => {
+                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+                }
+            };
+            funds.push( Fund{ name, amount, goal });
+        }
+
+        Ok(FundManager{ funds })
+    }
+
+    pub fn save(self, config: &Config) -> Result<(), Box<Error+Send+Sync>> {
+        let fundfile = config.fundfile.clone();
+        let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
+        let mut buf_writer = BufWriter::new(file);
+        for fund in self.funds {
+            let string = format!("{}:{}:{}\n", fund.name, fund.amount, fund.goal);
+            buf_writer.write(string.as_bytes())?;
+        }
+        Ok(())
+    }
+
+    pub fn get_fund_by_name(&mut self, name: String) -> Result<&mut Fund, &'static str> {
+        let query = Fund::new(name, None, None)?;
+        let index = self.funds.iter().position(|x| x.eq(&query));
+        match index {
+            Some(x) => Ok(&mut self.funds[x]),
+            None => Err("can't find a fund with that name"),
+        }
+    }    
+
+    pub fn print_all(&self) {
+        println!("{:10} | {:11} | {:11}", "Name", "Amount", "Goal");
+        for fund in self.funds.iter() {
+            fund.print_details();
+        }
+        for fund in self.funds.iter() {
+            fund.print_goal_status();
+        }
+    }
+
+    pub fn add_fund(&mut self, name: String, amount: Option<i32>, goal: Option<i32>) -> Result<(), Box<Error+Send+Sync>> {
+        let fund = Fund::new(name, amount, goal)?;
+        if self.funds.contains(&fund)
+        {
+            return Err(From::from(format!("fund '{}' already exists. Please choose a different name", fund.name)));
+        }
+        self.funds.push(fund);
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
 struct Fund {
     name: String,
     amount: i32,
@@ -160,14 +240,14 @@ impl Fund {
         fund.deposit(amount);
     }
 
-    pub fn get_by_name(funds: &mut Vec<Fund>, name: String) -> Result<&mut Fund, &'static str> {
-        for fund in funds {
-            if fund.name == name {
-                return Ok(fund);
-            }
-        }
-        Err("can't find a fund with that name")
-    }
+    //pub fn get_by_name(funds: &mut Vec<Fund>, name: String) -> Result<&mut Fund, &'static str> {
+    //    let query = Fund::new(name, None, None)?;
+    //    let index = funds.iter().position(|x| x.eq(&query));
+    //    match index {
+    //        Some(x) => Ok(&mut funds[x]),
+    //        None => Err("can't find a fund with that name"),
+    //    }
+    //}
 
     pub fn print_goal_status(&self) {
         if self.amount >= self.goal {
@@ -184,65 +264,73 @@ impl Fund {
     }
 
     fn display_dollars(amount: i32) -> String {
-        let amount = amount.to_string();
+        let mut amount = amount.to_string();
+        while amount.len() < 3 {
+            amount.insert(0, '0');
+        }
         let (dollars, cents) = amount.split_at(amount.len()-2);
         String::from(format!("${}.{}", dollars, cents))
     }
 
-    pub fn print_all(funds: &Vec<Fund>) {
-        println!("{:10} | {:11} | {:11}", "Name", "Amount", "Goal");
-        for fund in funds {
-            fund.print_details();
-        }
-        for fund in funds {
-            fund.print_goal_status();
-        }
+    //pub fn print_all(funds: &Vec<Fund>) {
+    //    println!("{:10} | {:11} | {:11}", "Name", "Amount", "Goal");
+    //    for fund in funds {
+    //        fund.print_details();
+    //    }
+    //    for fund in funds {
+    //        fund.print_goal_status();
+    //    }
+    //}
+
+    //pub fn save(funds: &Vec<Fund>, config: &Config) -> Result<(), Box<Error+Send+Sync>> {
+    //    let fundfile = config.fundfile.clone();
+    //    let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
+    //    let mut buf_writer = BufWriter::new(file);
+    //    for fund in funds {
+    //        let string = format!("{}:{:.2}:{:.2}\r\n", fund.name, fund.amount, fund.goal);
+    //        buf_writer.write(string.as_bytes())?;
+    //    }
+    //   Ok(())
+    //}
+
+    //pub fn load(config: &Config) -> Result<Vec<Fund>, Box<Error+Send+Sync>> {
+    //    let fundfile = config.fundfile.clone();
+    //    let file = OpenOptions::new().read(true).write(true).create(true).open(fundfile)?;
+    //    let mut funds: Vec<Fund> = Vec::new();
+    //    let buf_reader = BufReader::new(file);
+    //    for line in buf_reader.lines() {
+    //        let line = line?;
+    //        let fund_info: Vec<&str> = line.split_terminator(":").collect();
+    //        let name: String = match fund_info[0].parse() {
+    //            Ok(name) => name,
+    //            Err(e) => {
+    //                return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+    //            }
+    //        };
+    //        let amount: i32 = match fund_info[1].parse() {
+    //            Ok(amount) => amount,
+    //            Err(e) => {
+    //                return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+    //            }
+    //        };
+    //        let goal: i32 = match fund_info[2].parse() {
+    //            Ok(goal) => goal,
+    //            Err(e) => {
+    //                return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+    //            }
+    //        };
+    //        funds.push( Fund{ name, amount, goal });
+    //    }
+    //
+    //    Ok(funds)
+    //}
+
+}
+
+impl PartialEq for Fund {
+    fn eq (&self, x: &Fund) -> bool {
+        x.name == self.name
     }
-
-    pub fn save(funds: &Vec<Fund>, config: &Config) -> Result<(), Box<Error+Send+Sync>> {
-        let fundfile = config.fundfile.clone();
-        let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
-        let mut buf_writer = BufWriter::new(file);
-        for fund in funds {
-            let string = format!("{}:{:.2}:{:.2}\r\n", fund.name, fund.amount, fund.goal);
-            buf_writer.write(string.as_bytes())?;
-        }
-        Ok(())
-    }
-
-    pub fn load(config: &Config) -> Result<Vec<Fund>, Box<Error+Send+Sync>> {
-        let fundfile = config.fundfile.clone();
-        let file = OpenOptions::new().read(true).write(true).create(true).open(fundfile)?;
-        let mut funds: Vec<Fund> = Vec::new();
-        let buf_reader = BufReader::new(file);
-
-        for line in buf_reader.lines() {
-            let line = line?;
-            let fund_info: Vec<&str> = line.split_terminator(":").collect();
-            let name: String = match fund_info[0].parse() {
-                Ok(name) => name,
-                Err(e) => {
-                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
-                }
-            };
-            let amount: i32 = match fund_info[1].parse() {
-                Ok(amount) => amount,
-                Err(e) => {
-                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
-                }
-            };
-            let goal: i32 = match fund_info[2].parse() {
-                Ok(goal) => goal,
-                Err(e) => {
-                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
-                }
-            };
-            funds.push( Fund{ name, amount, goal });
-        }
-
-        Ok(funds)
-    }
-
 }
 
 

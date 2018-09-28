@@ -64,7 +64,7 @@ fn main() {
         },
         Ok(config)=> {
             if let Err(e) = fund::run(config) {
-                eprintln!("Application error {}", e);
+                eprintln!("Application error: {}", e);
                 process::exit(1);
             }
         }
