@@ -49,8 +49,8 @@ impl Config {
                 fund_name = spend_matches.value_of("name");
                 amount = spend_matches.value_of("amount");
             },
-            ("list", Some(list_matches)) => {
-                command = Some(String::from("list"));
+            ("info", Some(list_matches)) => {
+                command = Some(String::from("info"));
                 fund_name = list_matches.value_of("name");
             },
             ("", None) => command = Some(String::from("list")),
@@ -88,7 +88,7 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
         None => funds.print_all(),
         Some(command) => {
             match command.as_ref() {
-                "list" => {
+                "info" => {
                     match fund_name {
                         Some(name) => funds.print_fund(name)?,
                         None => funds.print_all(),
