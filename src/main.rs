@@ -48,10 +48,10 @@ fn main() {
                             .arg(Arg::with_name("amount")
                                 .help("The amount you are spending")
                                 .required(true)))
-                        .subcommand(SubCommand::with_name("list")
-                            .about("List fund details")
+                        .subcommand(SubCommand::with_name("info")
+                            .about("View fund information")
                             .arg(Arg::with_name("name")
-                                .help("The name of the fund you wish to view")
+                                .help("The name of the fund you wish to view. If absent, all funds will be printed.")
                                 .required(false)))
                         .get_matches();
 
