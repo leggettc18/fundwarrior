@@ -96,7 +96,10 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
                 },
                 "new" => {
                     match fund_name {
-                        Some(name) => funds.add_fund(name, amount, goal)?,
+                        Some(name) => {
+                            funds.add_fund(name.to_owned(), amount, goal)?;
+                            funds.print_fund(name)?;
+                        },
                         None => return Err(From::from("can't create a new struct with no name")),
                     }
                 },
@@ -104,7 +107,10 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
                     match fund_name {
                         Some(name) => {
                             match amount {
-                                Some(amount) => funds.get_fund_by_name(name)?.spend(amount),
+                                Some(amount) => {
+                                    funds.get_fund_by_name(name.to_owned())?.spend(amount);
+                                    funds.print_fund(name)?;
+                                },
                                 None => return Err(From::from("please supply an amount to spend")),
                             }
                         }
@@ -115,7 +121,10 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
                     match fund_name {
                         Some(name) => {
                             match amount {
-                                Some(amount) => funds.get_fund_by_name(name)?.deposit(amount),
+                                Some(amount) => {
+                                    funds.get_fund_by_name(name.to_owned())?.deposit(amount);
+                                    funds.print_fund(name)?;
+                                },
                                 None => return Err(From::from("please supply an amount to deposit")),
                             }
                         }
@@ -225,6 +234,7 @@ impl Fund {
 
     pub fn spend(&mut self, amount: i32) {
         self.amount -= amount;
+
     }
 
     pub fn deposit(&mut self, amount: i32) {
