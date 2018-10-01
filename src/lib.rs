@@ -6,6 +6,7 @@ use std::fs::OpenOptions;
 use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 use std::error::Error;
+use std::collections::HashMap;
 
 use clap::ArgMatches;
 
@@ -129,14 +130,15 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
 }
 
 struct FundManager {
-    funds: Vec<Fund>,
+    //funds: Vec<Fund>,
+    funds: HashMap<String, Fund>,
 }
 
 impl FundManager {
     pub fn load(config: &Config) -> Result<FundManager, Box<Error+Send+Sync>> {
         let fundfile = config.fundfile.clone();
         let file = OpenOptions::new().read(true).write(true).create(true).open(fundfile)?;
-        let mut funds: Vec<Fund> = Vec::new();
+        let mut funds: HashMap<String, Fund> = HashMap::new();
         let buf_reader = BufReader::new(file);
 
         for line in buf_reader.lines() {
@@ -160,7 +162,7 @@ impl FundManager {
                     return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
                 }
             };
-            funds.push( Fund{ name, amount, goal });
+            funds.insert(name, Fund{ amount, goal });
         }
 
         Ok(FundManager{ funds })
@@ -171,59 +173,49 @@ impl FundManager {
         let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
         let mut buf_writer = BufWriter::new(file);
         for fund in self.funds {
-            let string = format!("{}:{}:{}\n", fund.name, fund.amount, fund.goal);
+            let string = format!("{}:{}:{}\n", fund.0, fund.1.amount, fund.1.goal);
             buf_writer.write(string.as_bytes())?;
         }
         Ok(())
     }
 
     pub fn get_fund_by_name(&mut self, name: String) -> Result<&mut Fund, &'static str> {
-        let query = Fund::new(name, None, None)?;
-        let index = self.funds.iter().position(|x| x.eq(&query));
-        match index {
-            Some(x) => Ok(&mut self.funds[x]),
-            None => Err("can't find a fund with that name"),
+        match self.funds.get_mut(&name) {
+            Some(fund) => Ok(fund),
+            None => Err("cannot find the fund")
         }
     }    
 
     pub fn print_all(&self) {
-        println!("{:10} | {:11} | {:11}", "Name", "Amount", "Goal");
+        println!("{:^10} | {:^10} | {:^10}", "Name", "Amount", "Goal");
         for fund in self.funds.iter() {
-            fund.print_details();
-        }
-        for fund in self.funds.iter() {
-            fund.print_goal_status();
+            print!("{:<10} ", fund.0);
+            fund.1.print_details();
+            fund.1.print_goal_status();
         }
     }
 
     pub fn add_fund(&mut self, name: String, amount: Option<i32>, goal: Option<i32>) -> Result<(), Box<Error+Send+Sync>> {
-        let fund = Fund::new(name, amount, goal)?;
-        if self.funds.contains(&fund)
+        if self.funds.contains_key(&name)
         {
-            return Err(From::from(format!("fund '{}' already exists. Please choose a different name", fund.name)));
+            return Err(From::from(format!("fund '{}' already exists. Please choose a different name", name)));
         }
-        self.funds.push(fund);
+        self.funds.insert(name, Fund::new(amount, goal));
         Ok(())
     }
 }
 
 #[derive(Debug)]
 struct Fund {
-    name: String,
     amount: i32,
     goal: i32,
 }
 
 impl Fund {
-    pub fn new(name: String, amount: Option<i32>, goal: Option<i32>) -> Result<Fund, &'static str> {
-        if String::from(name.trim()).is_empty() {
-            return Err("fund name cannot be blank");
-        } else {
-            Ok(Fund {
-                name,
-                amount: amount.unwrap_or(0),
-                goal: goal.unwrap_or(0),
-            })
+    pub fn new(amount: Option<i32>, goal: Option<i32>) -> Fund {
+        Fund {
+            amount: amount.unwrap_or(0),
+            goal: goal.unwrap_or(0),
         }
     }
 
@@ -251,15 +243,15 @@ impl Fund {
 
     pub fn print_goal_status(&self) {
         if self.amount >= self.goal {
-            println!("Your goal of {} has been acheived for fund {}", self.goal, self.name);
+            println!("Your goal of {} has been acheived", self.goal);
         } else {
-            println!("Fund {} is {} away from its {} goal", self.name, 
+            println!("this fund is {} away from its {} goal", 
                 Fund::display_dollars(self.goal - self.amount), Fund::display_dollars(self.goal));
         }
     }
 
     pub fn print_details(&self) {
-        println!("{:10} | {:<10} | {:<10}", self.name, 
+        print!("| {:<10} | {:<10}",
             Fund::display_dollars(self.amount), Fund::display_dollars(self.goal));
     }
 
@@ -327,13 +319,6 @@ impl Fund {
 
 }
 
-impl PartialEq for Fund {
-    fn eq (&self, x: &Fund) -> bool {
-        x.name == self.name
-    }
-}
-
-
 
 #[cfg(test)]
 mod tests {
@@ -341,31 +326,23 @@ mod tests {
 
     #[test]
     fn create_fund() {
-        let fund = Fund::new(String::from("Test"), None, None).unwrap();
-        assert_eq!(fund.name, "Test");
+        let fund = Fund::new(None, None);
         assert_eq!(fund.amount, 0);
         assert_eq!(fund.goal, 0);
-        let fund_with_args = Fund::new(String::from("Test"), Some(500), Some(1000)).unwrap();
-        assert_eq!(fund_with_args.name, "Test");
+        let fund_with_args = Fund::new(Some(500), Some(1000));
         assert_eq!(fund_with_args.amount, 500);
         assert_eq!(fund_with_args.goal, 1000);
     }
 
     #[test]
-    fn fund_err_on_blank_name() {
-        let fund = Fund::new(String::from(" "), None, None);
-        assert!(fund.is_err());
-    }
-
-    #[test]
     fn fund_deposit() {
-        let mut fund = Fund::new(String::from("Test"), Some(500), Some(1000)).unwrap();
+        let mut fund = Fund::new(Some(500), Some(1000));
         fund.deposit(500);
         assert_eq!(fund.amount, 1000);
     }
     #[test]
     fn fund_spend() {
-        let mut fund = Fund::new(String::from("Test"), Some(500), Some(1000)).unwrap();
+        let mut fund = Fund::new(Some(500), Some(1000));
         fund.spend(250);
         assert_eq!(fund.amount, 250);
     }
