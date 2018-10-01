@@ -90,7 +90,7 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
             match command.as_ref() {
                 "list" => {
                     match fund_name {
-                        Some(name) => println!("{}: {}", name, funds.get_fund_by_name(name.to_owned())?),
+                        Some(name) => funds.print_fund(name)?,
                         None => funds.print_all(),
                     }
                 },
@@ -185,7 +185,13 @@ impl FundManager {
             Some(fund) => Ok(fund),
             None => Err("cannot find the fund")
         }
-    }    
+    }
+
+    pub fn print_fund(&mut self, name: String) -> Result<(), Box<Error+Send+Sync>> {
+        let fund = self.get_fund_by_name(name.to_owned())?;
+        println!("{}: {}", name, fund);
+        Ok(())
+    }
 
     pub fn print_all(&self) {
         for fund in self.funds.iter() {
