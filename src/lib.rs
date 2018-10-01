@@ -7,6 +7,7 @@ use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 use std::error::Error;
 use std::collections::HashMap;
+use std::fmt;
 
 use clap::ArgMatches;
 
@@ -89,7 +90,7 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
             match command.as_ref() {
                 "list" => {
                     match fund_name {
-                        Some(name) => funds.get_fund_by_name(name)?.print_details(),
+                        Some(name) => println!("{}: {}", name, funds.get_fund_by_name(name.to_owned())?),
                         None => funds.print_all(),
                     }
                 },
@@ -187,11 +188,8 @@ impl FundManager {
     }    
 
     pub fn print_all(&self) {
-        println!("{:^10} | {:^10} | {:^10}", "Name", "Amount", "Goal");
         for fund in self.funds.iter() {
-            print!("{:<10} ", fund.0);
-            fund.1.print_details();
-            fund.1.print_goal_status();
+            println!("{}: {}", fund.0, fund.1)
         }
     }
 
@@ -232,29 +230,6 @@ impl Fund {
         fund.deposit(amount);
     }
 
-    //pub fn get_by_name(funds: &mut Vec<Fund>, name: String) -> Result<&mut Fund, &'static str> {
-    //    let query = Fund::new(name, None, None)?;
-    //    let index = funds.iter().position(|x| x.eq(&query));
-    //    match index {
-    //        Some(x) => Ok(&mut funds[x]),
-    //        None => Err("can't find a fund with that name"),
-    //    }
-    //}
-
-    pub fn print_goal_status(&self) {
-        if self.amount >= self.goal {
-            println!("Your goal of {} has been acheived", self.goal);
-        } else {
-            println!("this fund is {} away from its {} goal", 
-                Fund::display_dollars(self.goal - self.amount), Fund::display_dollars(self.goal));
-        }
-    }
-
-    pub fn print_details(&self) {
-        print!("| {:<10} | {:<10}",
-            Fund::display_dollars(self.amount), Fund::display_dollars(self.goal));
-    }
-
     fn display_dollars(amount: i32) -> String {
         let mut amount = amount.to_string();
         while amount.len() < 3 {
@@ -263,60 +238,14 @@ impl Fund {
         let (dollars, cents) = amount.split_at(amount.len()-2);
         String::from(format!("${}.{}", dollars, cents))
     }
+}
 
-    //pub fn print_all(funds: &Vec<Fund>) {
-    //    println!("{:10} | {:11} | {:11}", "Name", "Amount", "Goal");
-    //    for fund in funds {
-    //        fund.print_details();
-    //    }
-    //    for fund in funds {
-    //        fund.print_goal_status();
-    //    }
-    //}
-
-    //pub fn save(funds: &Vec<Fund>, config: &Config) -> Result<(), Box<Error+Send+Sync>> {
-    //    let fundfile = config.fundfile.clone();
-    //    let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
-    //    let mut buf_writer = BufWriter::new(file);
-    //    for fund in funds {
-    //        let string = format!("{}:{:.2}:{:.2}\r\n", fund.name, fund.amount, fund.goal);
-    //        buf_writer.write(string.as_bytes())?;
-    //    }
-    //   Ok(())
-    //}
-
-    //pub fn load(config: &Config) -> Result<Vec<Fund>, Box<Error+Send+Sync>> {
-    //    let fundfile = config.fundfile.clone();
-    //    let file = OpenOptions::new().read(true).write(true).create(true).open(fundfile)?;
-    //    let mut funds: Vec<Fund> = Vec::new();
-    //    let buf_reader = BufReader::new(file);
-    //    for line in buf_reader.lines() {
-    //        let line = line?;
-    //        let fund_info: Vec<&str> = line.split_terminator(":").collect();
-    //        let name: String = match fund_info[0].parse() {
-    //            Ok(name) => name,
-    //            Err(e) => {
-    //                return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
-    //            }
-    //        };
-    //        let amount: i32 = match fund_info[1].parse() {
-    //            Ok(amount) => amount,
-    //            Err(e) => {
-    //                return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
-    //            }
-    //        };
-    //        let goal: i32 = match fund_info[2].parse() {
-    //            Ok(goal) => goal,
-    //            Err(e) => {
-    //                return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
-    //            }
-    //        };
-    //        funds.push( Fund{ name, amount, goal });
-    //    }
-    //
-    //    Ok(funds)
-    //}
-
+impl fmt::Display for Fund {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}/{} -- {} away from goal", Fund::display_dollars(self.amount),
+                                        Fund::display_dollars(self.goal),
+                                        Fund::display_dollars(self.goal - self.amount))
+    }
 }
 
 
