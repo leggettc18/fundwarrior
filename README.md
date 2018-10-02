@@ -1,3 +1,4 @@
+![fundwarrior logo](./fundwarrior.png)
 # FundWarrior
 
 A command line application for money managment inspired
