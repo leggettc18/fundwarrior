@@ -53,6 +53,17 @@ fn main() {
                             .arg(Arg::with_name("name")
                                 .help("The name of the fund you wish to view. If absent, all funds will be printed.")
                                 .required(false)))
+                        .subcommand(SubCommand::with_name("transfer")
+                            .about("Transfer money between funds")
+                            .arg(Arg::with_name("from_name")
+                                .help("The name of the fund you wish to transfer money out of")
+                                .required(true))
+                            .arg(Arg::with_name("to_name")
+                                .help("The name of the fund you wish to transfer money to")
+                                .required(true))
+                            .arg(Arg::with_name("amount")
+                                .help("The amount you wish to transfer")
+                                .required(true)))
                         .get_matches();
 
     let config = Config::new(matches);
