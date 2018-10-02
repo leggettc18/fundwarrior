@@ -2,6 +2,7 @@ extern crate dirs;
 extern crate clap;
 
 use std::io::prelude::*;
+use std::fs;
 use std::fs::OpenOptions;
 use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
@@ -12,8 +13,8 @@ use std::fmt;
 use clap::ArgMatches;
 
 pub struct Config {
-    pub configfile: PathBuf,
-    pub fundfile: PathBuf,
+    pub configdir: PathBuf,
+    pub funddir: PathBuf,
     pub command: Option<String>,
     pub fund_name: Option<String>,
     pub amount: Option<i32>,
@@ -22,10 +23,22 @@ pub struct Config {
 
 impl Config {
     pub fn new(matches: ArgMatches) -> Result<Config, Box<Error+Send+Sync>> {
-        let mut configfile: PathBuf = dirs::config_dir().unwrap();
-        configfile.push(PathBuf::from(r"fund/config"));
-        let mut fundfile: PathBuf = dirs::home_dir().unwrap();
-        fundfile.push(r".fund");
+        let mut configdir = PathBuf::new();
+        match dirs::config_dir() {
+            Some(path) => {
+                configdir = path;
+                configdir.push(PathBuf::from(r"fund"));
+            },
+            None => return Err(From::from("can't find config directory")),
+        }
+        let mut funddir = PathBuf::new();
+        match dirs::data_dir() {
+            Some(path) => {
+                funddir = path;
+                funddir.push(PathBuf::from(r"fund"));
+            },
+            None => return Err(From::from("can't find data directory")),
+        }
 
         let mut command = None;
         let mut fund_name = None;
@@ -63,7 +76,7 @@ impl Config {
 
         let goal = goal.map_or(Ok(None), |x| x.replace(".", "").parse::<i32>().map(Some))?;
 
-        Ok(Config { configfile, fundfile, command, fund_name, amount, goal })
+        Ok(Config { configdir, funddir, command, fund_name, amount, goal })
     }
 }
 
@@ -72,7 +85,7 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
     let fund_name = config.fund_name.clone();
     let amount = config.amount.clone();
     let goal = config.goal.clone();
-    let mut funds = FundManager::load(&config)?;
+    let mut funds = FundManager::load(&config.funddir)?;
 
     match command {
         None => funds.print_all(),
@@ -126,7 +139,7 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
         }
     }
 
-    funds.save(&config)
+    funds.save(&config.funddir)
 }
 
 struct FundManager {
@@ -135,9 +148,11 @@ struct FundManager {
 }
 
 impl FundManager {
-    pub fn load(config: &Config) -> Result<FundManager, Box<Error+Send+Sync>> {
-        let fundfile = config.fundfile.clone();
-        let file = OpenOptions::new().read(true).write(true).create(true).open(fundfile)?;
+    pub fn load(funddir: &PathBuf) -> Result<FundManager, Box<Error+Send+Sync>> {
+        fs::create_dir_all(funddir)?;
+        let mut fundfile = funddir.to_owned();
+        fundfile.push(r"fund");
+        let file = OpenOptions::new().read(true).write(true).create(true).open(&fundfile)?;
         let mut funds: HashMap<String, Fund> = HashMap::new();
         let buf_reader = BufReader::new(file);
 
@@ -147,19 +162,19 @@ impl FundManager {
             let name: String = match fund_info[0].parse() {
                 Ok(name) => name,
                 Err(e) => {
-                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+                    return Err(From::from(format!("while parsing {:?}: {}", fundfile, e)))
                 }
             };
             let amount: i32 = match fund_info[1].parse() {
                 Ok(amount) => amount,
                 Err(e) => {
-                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+                    return Err(From::from(format!("while parsing {:?}: {}", fundfile, e)))
                 }
             };
             let goal: i32 = match fund_info[2].parse() {
                 Ok(goal) => goal,
                 Err(e) => {
-                    return Err(From::from(format!("while parsing {:?}: {}", config.fundfile, e)))
+                    return Err(From::from(format!("while parsing {:?}: {}", fundfile, e)))
                 }
             };
             funds.insert(name, Fund{ amount, goal });
@@ -168,8 +183,10 @@ impl FundManager {
         Ok(FundManager{ funds })
     }
 
-    pub fn save(self, config: &Config) -> Result<(), Box<Error+Send+Sync>> {
-        let fundfile = config.fundfile.clone();
+    pub fn save(self, funddir: &PathBuf) -> Result<(), Box<Error+Send+Sync>> {
+        fs::create_dir_all(funddir)?;
+        let mut fundfile = funddir.to_owned();
+        fundfile.push(r"fund");
         let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
         let mut buf_writer = BufWriter::new(file);
         for fund in self.funds {
