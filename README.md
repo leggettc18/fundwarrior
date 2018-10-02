@@ -22,7 +22,7 @@ contain any spaces.
 You can then view this fund at any time with the command.
 
 ```
-fund list grocery
+fund info grocery
 ```
 
 Now say you want to set aside $500 for car repairs
@@ -34,13 +34,13 @@ fund new car 500.00 500.00
 If you want to view this fund
 
 ```
-fund list car
+fund info car
 ```
 
 Or if you want to view all your funds
 
 ```
-fund list
+fund info
 ```
 
 Or just
