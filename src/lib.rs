@@ -98,7 +98,7 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
                         Some(name) => {
                             match amount {
                                 Some(amount) => {
-                                    funds.get_fund_by_name(name.to_owned())?.spend(amount);
+                                    funds.get_fund_by_name(&name)?.spend(amount);
                                     funds.print_fund(name)?;
                                 },
                                 None => return Err(From::from("please supply an amount to spend")),
@@ -112,7 +112,7 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
                         Some(name) => {
                             match amount {
                                 Some(amount) => {
-                                    funds.get_fund_by_name(name.to_owned())?.deposit(amount);
+                                    funds.get_fund_by_name(&name)?.deposit(amount);
                                     funds.print_fund(name)?;
                                 },
                                 None => return Err(From::from("please supply an amount to deposit")),
@@ -179,22 +179,26 @@ impl FundManager {
         Ok(())
     }
 
-    pub fn get_fund_by_name(&mut self, name: String) -> Result<&mut Fund, &'static str> {
-        match self.funds.get_mut(&name) {
+    pub fn get_fund_by_name(&mut self, name: &str) -> Result<&mut Fund, &'static str> {
+        match self.funds.get_mut(name) {
             Some(fund) => Ok(fund),
             None => Err("cannot find the fund")
         }
     }
 
     pub fn print_fund(&mut self, name: String) -> Result<(), Box<Error+Send+Sync>> {
-        let fund = self.get_fund_by_name(name.to_owned())?;
-        println!("{}: {}", name, fund);
+        let fund = self.get_fund_by_name(&name)?;
+        let mut name = name;
+        name.push(':');
+        println!("{:<10} {}", name, fund);
         Ok(())
     }
 
     pub fn print_all(&self) {
         for fund in self.funds.iter() {
-            println!("{}: {}", fund.0, fund.1)
+            let mut name = fund.0.to_owned();
+            name.push(':');
+            println!("{:>10} {}", name, fund.1)
         }
     }
 
@@ -248,7 +252,7 @@ impl Fund {
 
 impl fmt::Display for Fund {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}/{} -- {} away from goal", Fund::display_dollars(self.amount),
+        write!(f, "{:^8} / {:<8} -- {} away from goal", Fund::display_dollars(self.amount),
                                         Fund::display_dollars(self.goal),
                                         Fund::display_dollars(self.goal - self.amount))
     }
