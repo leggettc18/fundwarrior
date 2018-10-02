@@ -17,6 +17,7 @@ pub struct Config {
     pub funddir: PathBuf,
     pub command: Option<String>,
     pub fund_name: Option<String>,
+    pub transfer_name: Option<String>,
     pub amount: Option<i32>,
     pub goal: Option<i32>,
 }
@@ -44,6 +45,7 @@ impl Config {
         let mut fund_name = None;
         let mut amount = None;
         let mut goal = None;
+        let mut transfer_name = None;
 
         match matches.subcommand() {
             ("new", Some(new_matches)) => {
@@ -66,23 +68,32 @@ impl Config {
                 command = Some(String::from("info"));
                 fund_name = list_matches.value_of("name");
             },
+            ("transfer", Some(list_matches)) => {
+                command = Some(String::from("transfer"));
+                fund_name = list_matches.value_of("from_name");
+                transfer_name = list_matches.value_of("to_name");
+                amount = list_matches.value_of("amount");
+            },
             ("", None) => command = Some(String::from("info")),
             _ => unreachable!(),
         }
 
         let fund_name = fund_name.map_or(None, |x| Some(String::from(x)));
 
+        let transfer_name = transfer_name.map_or(None, |x| Some(String::from(x)));
+
         let amount = amount.map_or(Ok(None), |x| x.replace(".", "").parse::<i32>().map(Some))?;
 
         let goal = goal.map_or(Ok(None), |x| x.replace(".", "").parse::<i32>().map(Some))?;
 
-        Ok(Config { configdir, funddir, command, fund_name, amount, goal })
+        Ok(Config { configdir, funddir, command, fund_name, transfer_name, amount, goal })
     }
 }
 
 pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
     let command = config.command.clone();
     let fund_name = config.fund_name.clone();
+    let transfer_name = config.transfer_name.clone();
     let amount = config.amount.clone();
     let goal = config.goal.clone();
     let mut funds = FundManager::load(&config.funddir)?;
@@ -132,6 +143,27 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
                             }
                         }
                         None => return Err(From::from("please supply a fund to deposit to")),
+                    }
+                },
+                "transfer" => {
+                    match fund_name {
+                        Some(name) => {
+                            match transfer_name {
+                                Some(transfer_name) => {
+                                    match amount {
+                                        Some(amount) => {
+                                            funds.get_fund_by_name(&name)?.spend(amount);
+                                            funds.get_fund_by_name(&transfer_name)?.deposit(amount);
+                                            funds.print_fund(name)?;
+                                            funds.print_fund(transfer_name)?;
+                                        },
+                                        None => return Err(From::from("please supply an amount to transfer")),
+                                    }
+                                },
+                                None => return Err(From::from("please supply a fund to transfer to")),
+                            }
+                        },
+                        None => return Err(From::from("please supply a fund to transfer from")),
                     }
                 },
                 _ => return Err(From::from("not a valid command")),
