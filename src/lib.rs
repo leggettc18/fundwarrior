@@ -53,25 +53,15 @@ impl Config {
                 command = Some(String::from("info"));
                 fund_name = list_matches.value_of("name");
             },
-            ("", None) => command = Some(String::from("list")),
+            ("", None) => command = Some(String::from("info")),
             _ => unreachable!(),
         }
 
         let fund_name = fund_name.map_or(None, |x| Some(String::from(x)));
 
-        let amount = match amount {
-            Some(x) => {
-                Some(x.replace(".", "").parse::<i32>()?)
-            },
-            None => None,
-        };
+        let amount = amount.map_or(Ok(None), |x| x.replace(".", "").parse::<i32>().map(Some))?;
 
-        let goal = match goal {
-            Some(x) => {
-                Some(x.replace(".", "").parse::<i32>()?)
-            },
-            None => None,
-        };
+        let goal = goal.map_or(Ok(None), |x| x.replace(".", "").parse::<i32>().map(Some))?;
 
         Ok(Config { configfile, fundfile, command, fund_name, amount, goal })
     }
