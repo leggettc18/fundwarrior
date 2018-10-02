@@ -91,39 +91,34 @@ impl Config {
 }
 
 pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
-    let command = config.command.clone();
-    let fund_name = config.fund_name.clone();
-    let transfer_name = config.transfer_name.clone();
-    let amount = config.amount.clone();
-    let goal = config.goal.clone();
     let mut funds = FundManager::load(&config.funddir)?;
 
-    match command {
+    match config.command {
         None => funds.print_all(),
         Some(command) => {
             match command.as_ref() {
                 "info" => {
-                    match fund_name {
-                        Some(name) => funds.print_fund(name)?,
+                    match config.fund_name {
+                        Some(name) => funds.print_fund(&name)?,
                         None => funds.print_all(),
                     }
                 },
                 "new" => {
-                    match fund_name {
+                    match config.fund_name {
                         Some(name) => {
-                            funds.add_fund(name.to_owned(), amount, goal)?;
-                            funds.print_fund(name)?;
+                            funds.add_fund(&name, config.amount, config.goal)?;
+                            funds.print_fund(&name)?;
                         },
                         None => return Err(From::from("can't create a new struct with no name")),
                     }
                 },
                 "spend" => {
-                    match fund_name {
+                    match config.fund_name {
                         Some(name) => {
-                            match amount {
+                            match config.amount {
                                 Some(amount) => {
                                     funds.get_fund_by_name(&name)?.spend(amount);
-                                    funds.print_fund(name)?;
+                                    funds.print_fund(&name)?;
                                 },
                                 None => return Err(From::from("please supply an amount to spend")),
                             }
@@ -132,12 +127,12 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
                     }
                 },
                 "deposit" => {
-                    match fund_name {
+                    match config.fund_name {
                         Some(name) => {
-                            match amount {
+                            match config.amount {
                                 Some(amount) => {
                                     funds.get_fund_by_name(&name)?.deposit(amount);
-                                    funds.print_fund(name)?;
+                                    funds.print_fund(&name)?;
                                 },
                                 None => return Err(From::from("please supply an amount to deposit")),
                             }
@@ -146,16 +141,16 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
                     }
                 },
                 "transfer" => {
-                    match fund_name {
+                    match config.fund_name {
                         Some(name) => {
-                            match transfer_name {
+                            match config.transfer_name {
                                 Some(transfer_name) => {
-                                    match amount {
+                                    match config.amount {
                                         Some(amount) => {
                                             funds.get_fund_by_name(&name)?.spend(amount);
                                             funds.get_fund_by_name(&transfer_name)?.deposit(amount);
-                                            funds.print_fund(name)?;
-                                            funds.print_fund(transfer_name)?;
+                                            funds.print_fund(&name)?;
+                                            funds.print_fund(&transfer_name)?;
                                         },
                                         None => return Err(From::from("please supply an amount to transfer")),
                                     }
@@ -175,7 +170,6 @@ pub fn run(config: Config) -> Result<(), Box<Error+Send+Sync>> {
 }
 
 struct FundManager {
-    //funds: Vec<Fund>,
     funds: HashMap<String, Fund>,
 }
 
@@ -191,11 +185,12 @@ impl FundManager {
         for line in buf_reader.lines() {
             let line = line?;
             let fund_info: Vec<&str> = line.split_terminator(":").collect();
-            let name: String = match fund_info[0].parse() {
+            if fund_info.len() < 3 {
+                return Err(From::from(format!("{:?} is invalid", fundfile)))
+            }
+            let name = match fund_info[0].parse() {
                 Ok(name) => name,
-                Err(e) => {
-                    return Err(From::from(format!("while parsing {:?}: {}", fundfile, e)))
-                }
+                Err(e) => return Err(From::from(format!("while parsing {:?}: {}", fundfile, e)))
             };
             let amount: i32 = match fund_info[1].parse() {
                 Ok(amount) => amount,
@@ -235,9 +230,9 @@ impl FundManager {
         }
     }
 
-    pub fn print_fund(&mut self, name: String) -> Result<(), Box<Error+Send+Sync>> {
-        let fund = self.get_fund_by_name(&name)?;
-        let mut name = name;
+    pub fn print_fund(&mut self, name: &str) -> Result<(), Box<Error+Send+Sync>> {
+        let fund = self.get_fund_by_name(name)?;
+        let mut name = String::from(name);
         name.push(':');
         println!("{:<10} {}", name, fund);
         Ok(())
@@ -251,12 +246,12 @@ impl FundManager {
         }
     }
 
-    pub fn add_fund(&mut self, name: String, amount: Option<i32>, goal: Option<i32>) -> Result<(), Box<Error+Send+Sync>> {
-        if self.funds.contains_key(&name)
+    pub fn add_fund(&mut self, name: &str, amount: Option<i32>, goal: Option<i32>) -> Result<(), Box<Error+Send+Sync>> {
+        if self.funds.contains_key(name)
         {
             return Err(From::from(format!("fund '{}' already exists. Please choose a different name", name)));
         }
-        self.funds.insert(name, Fund::new(amount, goal));
+        self.funds.insert(String::from(name), Fund::new(amount, goal));
         Ok(())
     }
 }
@@ -282,11 +277,6 @@ impl Fund {
 
     pub fn deposit(&mut self, amount: i32) {
         self.amount += amount;
-    }
-
-    pub fn transfer_to(&mut self, fund: &mut Fund, amount: i32) {
-        self.spend(amount);
-        fund.deposit(amount);
     }
 
     fn display_dollars(amount: i32) -> String {
