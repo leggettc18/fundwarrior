@@ -1,5 +1,6 @@
 extern crate clap;
 extern crate fund;
+extern crate libfund;
 
 use std::process;
 
