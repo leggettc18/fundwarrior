@@ -3,7 +3,7 @@ extern crate fund;
 
 use std::process;
 
-use clap::{Arg, App, SubCommand};
+use clap::{App, Arg, SubCommand};
 use fund::Config;
 
 fn main() {
@@ -66,14 +66,14 @@ fn main() {
                                 .required(true)))
                         .get_matches();
 
-    let config = Config::new(matches);
+    let config = Config::new(&matches);
 
     match config {
         Err(e) => {
             eprintln!("Error parsing arguments: {}", e);
             process::exit(1);
-        },
-        Ok(config)=> {
+        }
+        Ok(config) => {
             if let Err(e) = fund::run(config) {
                 eprintln!("Application error: {}", e);
                 process::exit(1);
