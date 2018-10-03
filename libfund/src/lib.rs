@@ -148,7 +148,10 @@ fn display_dollars(amount: i32) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{Fund, display_dollars};
+    use super::{FundManager, Fund, display_dollars};
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    use std::env;
 
     #[test]
     fn create_fund() {
@@ -177,5 +180,44 @@ mod tests {
     fn dollar_display() {
         let amount = 100;
         assert_eq!(display_dollars(amount), "$1.00");
+    }
+
+    #[test]
+    fn display() {
+        let fund = Fund::new(Some(500), Some(1000));
+        assert_eq!(format!("{}", fund), format!(
+            "{:^8} / {:<8} -- {} away from goal",
+            display_dollars(fund.amount),
+            display_dollars(fund.goal),
+            display_dollars(fund.goal - fund.amount)
+        ));
+    }
+
+    #[test]
+    fn adding_funds() {
+        let mut funds = FundManager{ funds: HashMap::new() };
+        let result = funds.add_fund("Test", Some(100), Some(500));
+        assert!(result.is_ok());
+        assert_eq!(funds.funds.len(), 1);
+        assert!(funds.funds.contains_key("Test"));
+        assert!(funds.add_fund("Test", None, None).is_err());
+    }
+    #[test]
+    fn getting_funds() {
+        let mut funds = FundManager{ funds: HashMap::new() };
+        funds.add_fund("Test", Some(100), Some(500)).unwrap();
+        assert!(funds.get_fund_by_name("Test").is_ok());
+        assert!(funds.get_fund_by_name("NotHere").is_err());
+    }
+
+    #[test]
+    fn load_and_save() {
+        let mut test_data = env::current_dir().unwrap();
+        test_data.push(r"test_data");
+        let result = FundManager::load(&test_data);
+        assert!(result.is_ok());
+        let funds = result.unwrap();
+        let result = funds.save(&test_data);
+        assert!(result.is_ok());
     }
 }
