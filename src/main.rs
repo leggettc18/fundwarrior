@@ -1,14 +1,15 @@
 extern crate clap;
 extern crate fund;
+extern crate libfund;
 
 use std::process;
 
-use clap::{Arg, App, SubCommand};
+use clap::{App, Arg, SubCommand};
 use fund::Config;
 
 fn main() {
     let matches = App::new("fundwarrior")
-                        .version("0.5.2")
+                        .version("0.6.0")
                         .author("Christopher Leggett <leggettc18@gmail.com>")
                         .about("Simple CLI Money Management")
                         .arg(Arg::with_name("config")
@@ -66,14 +67,14 @@ fn main() {
                                 .required(true)))
                         .get_matches();
 
-    let config = Config::new(matches);
+    let config = Config::new(&matches);
 
     match config {
         Err(e) => {
             eprintln!("Error parsing arguments: {}", e);
             process::exit(1);
-        },
-        Ok(config)=> {
+        }
+        Ok(config) => {
             if let Err(e) = fund::run(config) {
                 eprintln!("Application error: {}", e);
                 process::exit(1);
