@@ -123,15 +123,6 @@ impl Fund {
     pub fn deposit(&mut self, amount: i32) {
         self.amount += amount;
     }
-
-    fn display_dollars(amount: i32) -> String {
-        let mut amount = amount.to_string();
-        while amount.len() < 3 {
-            amount.insert(0, '0');
-        }
-        let (dollars, cents) = amount.split_at(amount.len() - 2);
-        format!("${}.{}", dollars, cents)
-    }
 }
 
 impl fmt::Display for Fund {
@@ -139,16 +130,25 @@ impl fmt::Display for Fund {
         write!(
             f,
             "{:^8} / {:<8} -- {} away from goal",
-            Fund::display_dollars(self.amount),
-            Fund::display_dollars(self.goal),
-            Fund::display_dollars(self.goal - self.amount)
+            display_dollars(self.amount),
+            display_dollars(self.goal),
+            display_dollars(self.goal - self.amount)
         )
     }
 }
 
+fn display_dollars(amount: i32) -> String {
+        let mut amount = amount.to_string();
+        while amount.len() < 3 {
+            amount.insert(0, '0');
+        }
+        let (dollars, cents) = amount.split_at(amount.len() - 2);
+        format!("${}.{}", dollars, cents)
+    }
+
 #[cfg(test)]
 mod tests {
-    use super::Fund;
+    use super::{Fund, display_dollars};
 
     #[test]
     fn create_fund() {
@@ -171,5 +171,11 @@ mod tests {
         let mut fund = Fund::new(Some(500), Some(1000));
         fund.spend(250);
         assert_eq!(fund.amount, 250);
+    }
+
+    #[test]
+    fn dollar_display() {
+        let amount = 100;
+        assert_eq!(display_dollars(amount), "$1.00");
     }
 }

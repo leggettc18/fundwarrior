@@ -9,3 +9,8 @@ clap = "~2.32"
 
 [dependencies.libfund]
 path = "libfund"
+
+[workspace]
+members = [
+    "libfund",
+]
