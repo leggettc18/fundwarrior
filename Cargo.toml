@@ -1,6 +1,6 @@
 [package]
 name = "fund"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Christopher Leggett <leggettc18@gmail.com>"]
 
 [dependencies]
@@ -9,3 +9,8 @@ clap = "~2.32"
 
 [dependencies.libfund]
 path = "libfund"
+
+[workspace]
+members = [
+    "libfund",
+]
