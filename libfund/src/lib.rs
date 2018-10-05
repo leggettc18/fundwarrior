@@ -21,12 +21,12 @@ pub struct FundManager {
 }
 
 impl FundManager {
-    /// Returns a new FundManager based on the contents of a file
-    /// named 'fund' found in the funddir
+    /// Returns a new FundManager based on the contents of the
+    /// specified file
     /// 
     /// # Arguments
     /// 
-    /// * `funddir` - the directory containing the fundfile
+    /// * `fundfile` - the location of the 'fund' file
     /// 
     /// # Errors
     /// 
@@ -71,7 +71,7 @@ impl FundManager {
     /// 
     /// # Arguments
     /// 
-    /// * `funddir` - the directory in which the file `fund` should be contained
+    /// * `fundfile` - the location of the 'fund' file
     /// 
     /// # Errors
     /// 
