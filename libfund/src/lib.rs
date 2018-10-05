@@ -150,7 +150,6 @@ fn display_dollars(amount: i32) -> String {
 mod tests {
     use super::{FundManager, Fund, display_dollars};
     use std::collections::HashMap;
-    use std::path::PathBuf;
     use std::env;
 
     #[test]
