@@ -1,6 +1,8 @@
 ![fundwarrior logo](./fundwarrior.png)
 # FundWarrior
 
+[![pipeline status](https://gitlab.com/leggettc18/fundwarrior/badges/master/pipeline.svg)](https://gitlab.com/leggettc18/fundwarrior/commits/master)
+
 A command line application for money managment inspired
 by TaskWarrior. The goal is for any user to be able to
 split their accounts into virtual "funds".
