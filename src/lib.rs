@@ -9,7 +9,7 @@ use clap::ArgMatches;
 
 pub struct Config {
     pub configdir: PathBuf,
-    pub funddir: PathBuf,
+    pub fundfile: PathBuf,
     pub command: String,
     pub fund_name: Option<String>,
     pub transfer_name: Option<String>,
@@ -26,13 +26,11 @@ impl Config {
             }
             None => return Err(From::from("can't find config directory")),
         };
-        let funddir = match dirs::data_dir() {
-            Some(mut path) => {
-                path.push(PathBuf::from(r"fund"));
-                path
-            }
-            None => return Err(From::from("can't find data directory")),
+        let mut fundfile = match dirs::data_dir() {
+            Some(data_dir) => data_dir,
+            None => return Err(From::from("can't use this directory"))
         };
+        fundfile.push("fund/fund");
 
         let mut command = String::from(matches.subcommand().0);
         let mut fund_name = None;
@@ -73,7 +71,7 @@ impl Config {
 
         Ok(Config {
             configdir,
-            funddir,
+            fundfile,
             command,
             fund_name,
             transfer_name,
@@ -84,7 +82,7 @@ impl Config {
 }
 
 pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
-    let mut funds = libfund::FundManager::load(&config.funddir)?;
+    let mut funds = libfund::FundManager::load(&config.fundfile)?;
 
     match config.command.as_str() {
         "info" => match config.fund_name {
@@ -136,5 +134,5 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
         _ => return Err(From::from("not a valid command")),
     }
 
-    funds.save(&config.funddir)
+    funds.save(&config.fundfile)
 }
