@@ -1,3 +1,11 @@
+//! # Fund Manager
+//! 
+//! This is a crate I wrote as a library for my FundWarrior project,
+//! a simple command line money management tool. I decided to split
+//! it into a separate library to make it easier to reuse later, if
+//! I or anyone else wished to make a GUI version of FundWarrior for
+//! example.
+
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
@@ -7,11 +15,24 @@ use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 
+/// Manages storage and retrieval of Funds
 pub struct FundManager {
     funds: HashMap<String, Fund>,
 }
 
 impl FundManager {
+    /// Returns a new FundManager based on the contents of a file
+    /// named 'fund' found in the funddir
+    /// 
+    /// # Arguments
+    /// 
+    /// * `funddir` - the directory containing the fundfile
+    /// 
+    /// # Errors
+    /// 
+    /// * When the directories could not be created
+    /// * When the file could not be opened
+    /// * When the file could not be parsed correctly
     pub fn load(funddir: &PathBuf) -> Result<FundManager, Box<Error + Send + Sync>> {
         fs::create_dir_all(funddir)?;
         let mut fundfile = funddir.to_owned();
@@ -48,6 +69,18 @@ impl FundManager {
         Ok(FundManager { funds })
     }
 
+    /// Saves FundManager to a file and Returns either the unit type or an Error
+    /// 
+    /// # Arguments
+    /// 
+    /// * `funddir` - the directory in which the file `fund` should be contained
+    /// 
+    /// # Errors
+    /// 
+    /// * When the specified directory and/or parent directories
+    /// could not be created
+    /// * When the 'fund' file could not be created or opened
+    /// * When the 'fund' file could not be written to
     pub fn save(self, funddir: &PathBuf) -> Result<(), Box<Error + Send + Sync>> {
         fs::create_dir_all(funddir)?;
         let mut fundfile = funddir.to_owned();
@@ -61,6 +94,16 @@ impl FundManager {
         Ok(())
     }
 
+    /// Returns a Result containing either an Error message or a mutable reference
+    /// to the fund with the specified name
+    /// 
+    /// # Arguments
+    /// 
+    /// * `name` - a string slice representing the name of the fund you want
+    /// 
+    /// # Errors
+    /// 
+    /// * When the fund cannot be found
     pub fn get_fund_by_name(&mut self, name: &str) -> Result<&mut Fund, &'static str> {
         match self.funds.get_mut(name) {
             Some(fund) => Ok(fund),
@@ -68,14 +111,26 @@ impl FundManager {
         }
     }
 
+    /// Prints information about the fund with the given name to stdout, or returns an
+    /// Error if the fund could not be found
+    /// 
+    /// # Arguments
+    /// 
+    /// * `name` - a string slice representing the name of the fund you want to print
+    /// 
+    /// # Errors
+    /// 
+    /// * When the fund cannot be found
     pub fn print_fund(&mut self, name: &str) -> Result<(), Box<Error + Send + Sync>> {
         let fund = self.get_fund_by_name(name)?;
         let mut name = String::from(name);
         name.push(':');
-        println!("{:<10} {}", name, fund);
+        println!("{:>10} {}", name, fund);
         Ok(())
     }
 
+    /// Prints information about all funds the FundManager is currently
+    /// storing
     pub fn print_all(&self) {
         for fund in &self.funds {
             let mut name = fund.0.to_owned();
@@ -84,6 +139,18 @@ impl FundManager {
         }
     }
 
+    /// Adds a new Fund to the FundManager
+    /// 
+    /// # Arguments
+    /// 
+    /// * `name` - the name of the new fund
+    /// * `amount` - either `Some(x)`, where x is the starting amount of the new fund
+    ///  or `None` in which case the starting amount is 0
+    /// * `goal` - either `Some(x)`, where x is the goal for this fund, or `None` in which case the goal is 0
+    /// 
+    /// # Errors
+    /// 
+    /// * When attempting to add a fund with a name that is already in use
     pub fn add_fund(
         &mut self,
         name: &str,
@@ -102,6 +169,7 @@ impl FundManager {
     }
 }
 
+/// Stores and manipulates a running balance and goal to shoot for
 #[derive(Debug)]
 pub struct Fund {
     amount: i32,
@@ -109,6 +177,14 @@ pub struct Fund {
 }
 
 impl Fund {
+    /// Returns a new Fund
+    /// 
+    /// # Arguments
+    /// 
+    /// * `amount` - either Some(x), where x is the starting amount of the fund,
+    /// or None, in which case it starts at 0
+    /// * `goal` - either Some(x), where x is the starting goal of the fund,
+    /// or None, in which case it starts at 0
     pub fn new(amount: Option<i32>, goal: Option<i32>) -> Fund {
         Fund {
             amount: amount.unwrap_or(0),
@@ -116,10 +192,20 @@ impl Fund {
         }
     }
 
+    /// Decreases the amount stored in the Fund
+    /// 
+    /// # Arguments
+    /// 
+    /// * `amount` - The amount of money to subtract from the fund
     pub fn spend(&mut self, amount: i32) {
         self.amount -= amount;
     }
 
+    /// Increases the amount stored in the Fund
+    /// 
+    /// # Arguments
+    /// 
+    /// * `amount` - The amount of money to add to the fund
     pub fn deposit(&mut self, amount: i32) {
         self.amount += amount;
     }
@@ -131,7 +217,8 @@ impl fmt::Display for Fund {
             f,
             "{:^8} / {:<8} -- {} away from goal",
             display_dollars(self.amount),
-            display_dollars(self.goal),
+            display_dollars(self.goal),    //use std::path::PathBuf;
+
             display_dollars(self.goal - self.amount)
         )
     }
