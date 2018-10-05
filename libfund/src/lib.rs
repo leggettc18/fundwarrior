@@ -13,7 +13,7 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// Manages storage and retrieval of Funds
 pub struct FundManager {
