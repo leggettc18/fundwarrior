@@ -13,7 +13,7 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Manages storage and retrieval of Funds
 pub struct FundManager {
@@ -33,10 +33,8 @@ impl FundManager {
     /// * When the directories could not be created
     /// * When the file could not be opened
     /// * When the file could not be parsed correctly
-    pub fn load(funddir: &PathBuf) -> Result<FundManager, Box<Error + Send + Sync>> {
-        fs::create_dir_all(funddir)?;
-        let mut fundfile = funddir.to_owned();
-        fundfile.push(r"fund");
+    pub fn load(fundfile: &Path) -> Result<FundManager, Box<Error + Send + Sync>> {
+        fs::create_dir_all(fundfile.parent().unwrap_or(fundfile))?;
         let file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -81,10 +79,8 @@ impl FundManager {
     /// could not be created
     /// * When the 'fund' file could not be created or opened
     /// * When the 'fund' file could not be written to
-    pub fn save(self, funddir: &PathBuf) -> Result<(), Box<Error + Send + Sync>> {
-        fs::create_dir_all(funddir)?;
-        let mut fundfile = funddir.to_owned();
-        fundfile.push(r"fund");
+    pub fn save(self, fundfile: &Path) -> Result<(), Box<Error + Send + Sync>> {
+        fs::create_dir_all(fundfile.parent().unwrap_or(fundfile))?;
         let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
         let mut buf_writer = BufWriter::new(file);
         for fund in self.funds {
@@ -299,7 +295,7 @@ mod tests {
     #[test]
     fn load_and_save() {
         let mut test_data = env::current_dir().unwrap();
-        test_data.push(r"test_data");
+        test_data.push(r"test_data/fund");
         let result = FundManager::load(&test_data);
         assert!(result.is_ok());
         let funds = result.unwrap();
