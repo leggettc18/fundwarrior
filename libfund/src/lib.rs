@@ -1,3 +1,11 @@
+//! # Fund Manager
+//! 
+//! This is a crate I wrote as a library for my FundWarrior project,
+//! a simple command line money management tool. I decided to split
+//! it into a separate library to make it easier to reuse later, if
+//! I or anyone else wished to make a GUI version of FundWarrior for
+//! example.
+
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
@@ -7,6 +15,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 
+/// Manages storage and retrieval of Funds
 pub struct FundManager {
     funds: HashMap<String, Fund>,
 }
@@ -160,6 +169,7 @@ impl FundManager {
     }
 }
 
+/// Stores and manipulates a running balance and goal to shoot for
 #[derive(Debug)]
 pub struct Fund {
     amount: i32,
