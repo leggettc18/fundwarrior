@@ -91,7 +91,15 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
         },
         "new" => match config.fund_name {
             Some(name) => {
-                funds.add_fund(&name, config.amount, config.goal)?;
+                let mut fund = libfund::Fund::new();
+                if let Some(amount) = config.amount {
+                    fund.with_amount(amount);
+                }
+                if let Some(goal) = config.goal {
+                    fund.with_goal(goal);
+                }
+                let fund = fund.build();
+                funds.add_fund(&name, fund)?;
                 funds.print_fund(&name)?;
             }
             None => return Err(From::from("can't create a new struct with no name")),
