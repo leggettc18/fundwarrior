@@ -150,8 +150,7 @@ impl FundManager {
     pub fn add_fund(
         &mut self,
         name: &str,
-        amount: Option<i32>,
-        goal: Option<i32>,
+        fund: Fund
     ) -> Result<(), Box<Error + Send + Sync>> {
         if self.funds.contains_key(name) {
             return Err(From::from(format!(
@@ -160,31 +159,72 @@ impl FundManager {
             )));
         }
         self.funds
-            .insert(String::from(name), Fund::new(amount, goal));
+            .insert(String::from(name), fund);
         Ok(())
     }
 }
 
 /// Stores and manipulates a running balance and goal to shoot for
-#[derive(Debug)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Fund {
-    amount: i32,
-    goal: i32,
+    pub amount: i32,
+    pub goal: i32,
 }
 
 impl Fund {
-    /// Returns a new Fund
-    /// 
-    /// # Arguments
-    /// 
-    /// * `amount` - either Some(x), where x is the starting amount of the fund,
-    /// or None, in which case it starts at 0
-    /// * `goal` - either Some(x), where x is the starting goal of the fund,
-    /// or None, in which case it starts at 0
-    pub fn new(amount: Option<i32>, goal: Option<i32>) -> Fund {
+    /// Returns a new Fund with default amounts of 0 for amount and goal
+    pub fn new() -> Fund {
         Fund {
-            amount: amount.unwrap_or(0),
-            goal: goal.unwrap_or(0),
+            amount: 0,
+            goal: 0,
+        }
+    }
+
+    /// Sets `self`'s amount and returns a reference to itself.
+    /// Intended for use as part of a builder pattern.
+    /// 
+    /// # Example
+    /// ```
+    /// use libfund::Fund;
+    /// 
+    /// let fund = Fund::new().with_amount(100).build();
+    /// assert_eq!(fund.amount, 100);
+    /// assert_eq!(fund.goal, 0);
+    /// ```
+    pub fn with_amount(&mut self, amount: i32) -> &mut Self {
+        self.amount = amount;
+        self
+    }
+
+    /// Sets `self`'s goal and returns a reference to itself.
+    /// Intended for use as part of a builder pattern.assert_eq!
+    /// # Example
+    /// ```
+    /// use libfund::Fund;
+    /// 
+    /// let fund = Fund::new().with_goal(500).build();
+    /// assert_eq!(fund.amount, 0);
+    /// assert_eq!(fund.goal, 500);
+    pub fn with_goal(&mut self, goal: i32) -> &mut Self {
+        self.goal = goal;
+        self
+    }
+
+    /// Returns a new fund based on itself and consumes its reference. 
+    /// Intended as the last step of a builder pattern.
+    /// 
+    /// # Example
+    /// ```
+    /// use libfund::Fund;
+    /// 
+    /// let fund = Fund::new().with_amount(100).with_goal(500).build();
+    /// assert_eq!(fund.amount, 100 );
+    /// assert_eq!(fund.goal, 500);
+    /// ```
+    pub fn build(&self) -> Fund {
+        Fund{
+            amount: self.amount,
+            goal: self.goal,
         }
     }
 
@@ -237,23 +277,23 @@ mod tests {
 
     #[test]
     fn create_fund() {
-        let fund = Fund::new(None, None);
+        let fund = Fund::new();
         assert_eq!(fund.amount, 0);
         assert_eq!(fund.goal, 0);
-        let fund_with_args = Fund::new(Some(500), Some(1000));
+        let fund_with_args = Fund::new().with_amount(500).with_goal(1000).build();
         assert_eq!(fund_with_args.amount, 500);
         assert_eq!(fund_with_args.goal, 1000);
     }
 
     #[test]
     fn fund_deposit() {
-        let mut fund = Fund::new(Some(500), Some(1000));
+        let mut fund = Fund::new().with_amount(500).with_goal(1000).build();
         fund.deposit(500);
         assert_eq!(fund.amount, 1000);
     }
     #[test]
     fn fund_spend() {
-        let mut fund = Fund::new(Some(500), Some(1000));
+        let mut fund = Fund::new().with_amount(500).with_goal(1000).build();
         fund.spend(250);
         assert_eq!(fund.amount, 250);
     }
@@ -266,7 +306,7 @@ mod tests {
 
     #[test]
     fn display() {
-        let fund = Fund::new(Some(500), Some(1000));
+        let fund = Fund::new().with_amount(500).with_goal(1000).build();
         assert_eq!(format!("{}", fund), format!(
             "{:^8} / {:<8} -- {} away from goal",
             display_dollars(fund.amount),
@@ -278,16 +318,16 @@ mod tests {
     #[test]
     fn adding_funds() {
         let mut funds = FundManager{ funds: HashMap::new() };
-        let result = funds.add_fund("Test", Some(100), Some(500));
+        let result = funds.add_fund("Test", Fund::new().with_amount(100).with_goal(500).build());
         assert!(result.is_ok());
         assert_eq!(funds.funds.len(), 1);
         assert!(funds.funds.contains_key("Test"));
-        assert!(funds.add_fund("Test", None, None).is_err());
+        assert!(funds.add_fund("Test", Fund::new()).is_err());
     }
     #[test]
     fn getting_funds() {
         let mut funds = FundManager{ funds: HashMap::new() };
-        funds.add_fund("Test", Some(100), Some(500)).unwrap();
+        funds.add_fund("Test", Fund::new().with_amount(100).with_goal(500).build()).unwrap();
         assert!(funds.get_fund_by_name("Test").is_ok());
         assert!(funds.get_fund_by_name("NotHere").is_err());
     }
