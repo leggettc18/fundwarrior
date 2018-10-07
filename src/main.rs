@@ -9,7 +9,7 @@ use fund::Config;
 
 fn main() {
     let matches = App::new("fundwarrior")
-                        .version("0.7.0")
+                        .version("0.8.0")
                         .author("Christopher Leggett <leggettc18@gmail.com>")
                         .about("Simple CLI Money Management")
                         .arg(Arg::with_name("config")
