@@ -117,6 +117,13 @@ impl FundManager {
         }
     }
 
+    pub fn fund_mut(&mut self, name: &str) -> Result<&mut Fund, Box<Error + Send + Sync>> {
+        match self.funds.get_mut(name) {
+            Some(fund) => Ok(fund),
+            None => Err(From::from("cannot find the fund")),
+        }
+    }
+
     /// Prints information about the fund with the given name to stdout, or returns an
     /// Error if the fund could not be found
     /// 
