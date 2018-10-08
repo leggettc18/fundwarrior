@@ -60,6 +60,10 @@ impl Config {
                 transfer_name = list_matches.value_of("to_name");
                 amount = list_matches.value_of("amount");
             }
+            ("rename", Some(list_matches)) => {
+                fund_name = list_matches.value_of("old_name");
+                transfer_name = list_matches.value_of("new_name");
+            }
             ("", None) => command = String::from("info"),
             _ => unreachable!(),
         }
@@ -138,6 +142,16 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
                 None => return Err(From::from("please supply a fund to transfer to")),
             },
             None => return Err(From::from("please supply a fund to transfer from")),
+        },
+        "rename" => match config.fund_name {
+            Some(name) => match config.transfer_name {
+                Some(transfer_name) => {
+                    funds.rename(&name, &transfer_name)?;
+                    funds.print_fund(&transfer_name)?;
+                },
+                None => return Err(From::from("please supply a new unique name")),
+            },
+            None => return Err(From::from("please supply the name of the fund to rename")),
         },
         _ => return Err(From::from("not a valid command")),
     }

@@ -227,6 +227,14 @@ impl FundManager {
             .insert(String::from(name), fund);
         Ok(())
     }
+
+    pub fn rename(&mut self, old_name: &str, new_name: &str) -> Result<(), Box<Error+Send+Sync>> {
+        match self.funds.remove(old_name) {
+            Some(fund) => self.add_fund(new_name, fund)?,
+            None => return Err(From::from("cannot find a fund by that name")),
+        };
+        Ok(())
+    }
 }
 
 impl<'a> IntoIterator for &'a FundManager {

@@ -65,6 +65,14 @@ fn main() {
                             .arg(Arg::with_name("amount")
                                 .help("The amount you wish to transfer")
                                 .required(true)))
+                        .subcommand(SubCommand::with_name("rename")
+                            .about("Rename a fund")
+                            .arg(Arg::with_name("old_name")
+                                .help("The name of the fund you wish to rename")
+                                .required(true))
+                            .arg(Arg::with_name("new_name")
+                                .help("The unique name you wish to give the fund")
+                                .required(true)))
                         .get_matches();
 
     let config = Config::new(&matches);
