@@ -73,6 +73,17 @@ fn main() {
                             .arg(Arg::with_name("new_name")
                                 .help("The unique name you wish to give the fund")
                                 .required(true)))
+                        .subcommand(SubCommand::with_name("set")
+                            .about("Set the amount or goal of a fund")
+                            .arg(Arg::with_name("name")
+                                .help("The name of the fund you wish to update")
+                                .required(true))
+                            .arg(Arg::with_name("field")
+                                .help("The name of the field you wish to change (either amount or goal)")
+                                .required(true))
+                            .arg(Arg::with_name("amount")
+                                .help("The amount you wish to change the specied field to")
+                                .required(true)))
                         .get_matches();
 
     let config = Config::new(&matches);
