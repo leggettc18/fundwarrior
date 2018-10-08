@@ -102,10 +102,18 @@ impl FundManager {
     /// # Errors
     /// 
     /// * When the fund cannot be found
+    #[deprecated(since="0.8.0", note="please use `fund` or `fund_mut` instead")]
     pub fn get_fund_by_name(&mut self, name: &str) -> Result<&mut Fund, &'static str> {
         match self.funds.get_mut(name) {
             Some(fund) => Ok(fund),
             None => Err("cannot find the fund"),
+        }
+    }
+
+    pub fn fund(&self, name: &str) -> Result<&Fund, Box<Error + Send + Sync>> {
+        match self.funds.get(name) {
+            Some(fund) => Ok(fund),
+            None => Err(From::from("cannot find the fund")),
         }
     }
 
