@@ -6,7 +6,7 @@
 //! I or anyone else wished to make a GUI version of FundWarrior for
 //! example.
 
-use std::collections::hash_map::Iter;
+use std::collections::hash_map::{Iter, IterMut};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::error::Error;
@@ -172,6 +172,15 @@ impl<'a> IntoIterator for &'a FundManager {
 
     fn into_iter(self) -> Self::IntoIter {
         self.funds.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut FundManager {
+    type Item = (&'a String, &'a mut Fund);
+    type IntoIter = IterMut<'a, String, Fund>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.funds.iter_mut()
     }
 }
 
