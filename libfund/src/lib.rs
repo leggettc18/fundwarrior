@@ -6,7 +6,9 @@
 //! I or anyone else wished to make a GUI version of FundWarrior for
 //! example.
 
+use std::collections::hash_map::{Iter, IterMut};
 use std::collections::HashMap;
+use std::iter::FromIterator;
 use std::error::Error;
 use std::fmt;
 use std::fs;
@@ -40,7 +42,7 @@ impl FundManager {
             .write(true)
             .create(true)
             .open(&fundfile)?;
-        let mut funds: HashMap<String, Fund> = HashMap::new();
+        let mut funds: Vec<(String, Fund)> = Vec::new();
         let buf_reader = BufReader::new(file);
 
         for line in buf_reader.lines() {
@@ -61,10 +63,10 @@ impl FundManager {
                 Ok(goal) => goal,
                 Err(e) => return Err(From::from(format!("while parsing {:?}: {}", fundfile, e))),
             };
-            funds.insert(name, Fund { amount, goal });
+            funds.push((name, Fund::new().with_amount(amount).with_goal(goal).build()));
         }
 
-        Ok(FundManager { funds })
+        Ok(funds.into_iter().collect())
     }
 
     /// Saves FundManager to a file and Returns either the unit type or an Error
@@ -79,11 +81,11 @@ impl FundManager {
     /// could not be created
     /// * When the 'fund' file could not be created or opened
     /// * When the 'fund' file could not be written to
-    pub fn save(self, fundfile: &Path) -> Result<(), Box<Error + Send + Sync>> {
+    pub fn save(&self, fundfile: &Path) -> Result<(), Box<Error + Send + Sync>> {
         fs::create_dir_all(fundfile.parent().unwrap_or(fundfile))?;
         let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
         let mut buf_writer = BufWriter::new(file);
-        for fund in self.funds {
+        for fund in self {
             let string = format!("{}:{}:{}\n", fund.0, fund.1.amount, fund.1.goal);
             buf_writer.write_all(string.as_bytes())?;
         }
@@ -128,7 +130,7 @@ impl FundManager {
     /// Prints information about all funds the FundManager is currently
     /// storing
     pub fn print_all(&self) {
-        for fund in &self.funds {
+        for fund in self {
             let mut name = fund.0.to_owned();
             name.push(':');
             println!("{:>10} {}", name, fund.1)
@@ -161,6 +163,35 @@ impl FundManager {
         self.funds
             .insert(String::from(name), fund);
         Ok(())
+    }
+}
+
+impl<'a> IntoIterator for &'a FundManager {
+    type Item = (&'a String, &'a Fund);
+    type IntoIter = Iter<'a, String, Fund>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.funds.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut FundManager {
+    type Item = (&'a String, &'a mut Fund);
+    type IntoIter = IterMut<'a, String, Fund>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.funds.iter_mut()
+    }
+}
+
+impl FromIterator<(String, Fund)> for FundManager {
+
+    fn from_iter<I: IntoIterator<Item=(String, Fund)>>(iter: I) -> Self {
+        let mut funds = HashMap::new();
+        for fund in iter {
+            funds.insert(fund.0, fund.1);
+        }
+        FundManager{ funds }
     }
 }
 

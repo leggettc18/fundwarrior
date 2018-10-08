@@ -141,6 +141,5 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
         },
         _ => return Err(From::from("not a valid command")),
     }
-
     funds.save(&config.fundfile)
 }
