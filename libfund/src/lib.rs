@@ -85,7 +85,7 @@ impl FundManager {
         fs::create_dir_all(fundfile.parent().unwrap_or(fundfile))?;
         let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
         let mut buf_writer = BufWriter::new(file);
-        for fund in self.funds {
+        for fund in self {
             let string = format!("{}:{}:{}\n", fund.0, fund.1.amount, fund.1.goal);
             buf_writer.write_all(string.as_bytes())?;
         }
