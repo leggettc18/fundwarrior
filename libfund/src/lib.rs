@@ -23,6 +23,10 @@ pub struct FundManager {
 }
 
 impl FundManager {
+
+    pub fn new() -> FundManager {
+        FundManager{ funds: HashMap::new() }
+    }
     /// Returns a new FundManager based on the contents of the
     /// specified file
     /// 
@@ -110,6 +114,27 @@ impl FundManager {
         }
     }
 
+    /// Takes the name of a `Fund` and returns a reference to it, or an
+    /// Error if the `Fund` does not exist
+    ///
+    /// # Arguments
+    /// 
+    /// * `name` - a string slice containing the name of the `Fund` you want
+    /// 
+    /// # Errors
+    /// 
+    /// * When the `Fund` cannot be found
+    /// 
+    /// # Example
+    /// ```
+    /// use libfund::{Fund, FundManager};
+    /// 
+    /// let mut funds = FundManager::new();
+    /// funds.add_fund("test", Fund::new().with_amount(100).with_goal(500).build());
+    /// let fund = funds.fund("test").unwrap();
+    /// assert_eq!(fund.amount, 100);
+    /// assert_eq!(fund.goal, 500);
+    /// ```
     pub fn fund(&self, name: &str) -> Result<&Fund, Box<Error + Send + Sync>> {
         match self.funds.get(name) {
             Some(fund) => Ok(fund),
@@ -117,6 +142,29 @@ impl FundManager {
         }
     }
 
+    /// Takes the name of a `Fund` and returns a mutable reference to it, or
+    /// an Error if the `Fund` does not exist
+    /// 
+    /// # Arguments
+    /// 
+    /// * `name` - a string slice containing the name of the `Fund` you want
+    /// 
+    /// # Errors
+    /// 
+    /// * When the `Fund` cannot be found
+    /// 
+    /// # Example
+    /// ```
+    /// use libfund::{Fund, FundManager};
+    /// 
+    /// let mut funds = FundManager::new();
+    /// funds.add_fund("test", Fund::new().with_amount(100).with_goal(500).build());
+    /// let mut fund = funds.fund_mut("test").unwrap();
+    /// assert_eq!(fund.amount, 100);
+    /// assert_eq!(fund.goal, 500);
+    /// fund.amount = 200;
+    /// assert_eq!(fund.amount, 200);
+    /// ```
     pub fn fund_mut(&mut self, name: &str) -> Result<&mut Fund, Box<Error + Send + Sync>> {
         match self.funds.get_mut(name) {
             Some(fund) => Ok(fund),
