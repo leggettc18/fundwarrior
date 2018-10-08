@@ -183,7 +183,7 @@ impl FundManager {
     /// 
     /// * When the fund cannot be found
     pub fn print_fund(&mut self, name: &str) -> Result<(), Box<Error + Send + Sync>> {
-        let fund = self.get_fund_by_name(name)?;
+        let fund = self.fund(name)?;
         let mut name = String::from(name);
         name.push(':');
         println!("{:>10} {}", name, fund);
@@ -422,8 +422,8 @@ mod tests {
     fn getting_funds() {
         let mut funds = FundManager{ funds: HashMap::new() };
         funds.add_fund("Test", Fund::new().with_amount(100).with_goal(500).build()).unwrap();
-        assert!(funds.get_fund_by_name("Test").is_ok());
-        assert!(funds.get_fund_by_name("NotHere").is_err());
+        assert!(funds.fund("Test").is_ok());
+        assert!(funds.fund("NotHere").is_err());
     }
 
     #[test]

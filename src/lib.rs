@@ -107,7 +107,7 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
         "spend" => match config.fund_name {
             Some(name) => match config.amount {
                 Some(amount) => {
-                    funds.get_fund_by_name(&name)?.spend(amount);
+                    funds.fund_mut(&name)?.spend(amount);
                     funds.print_fund(&name)?;
                 }
                 None => return Err(From::from("please supply an amount to spend")),
@@ -117,7 +117,7 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
         "deposit" => match config.fund_name {
             Some(name) => match config.amount {
                 Some(amount) => {
-                    funds.get_fund_by_name(&name)?.deposit(amount);
+                    funds.fund_mut(&name)?.deposit(amount);
                     funds.print_fund(&name)?;
                 }
                 None => return Err(From::from("please supply an amount to deposit")),
@@ -128,8 +128,8 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
             Some(name) => match config.transfer_name {
                 Some(transfer_name) => match config.amount {
                     Some(amount) => {
-                        funds.get_fund_by_name(&name)?.spend(amount);
-                        funds.get_fund_by_name(&transfer_name)?.deposit(amount);
+                        funds.fund_mut(&name)?.spend(amount);
+                        funds.fund_mut(&transfer_name)?.deposit(amount);
                         funds.print_fund(&name)?;
                         funds.print_fund(&transfer_name)?;
                     }
