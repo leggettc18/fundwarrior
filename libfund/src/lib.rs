@@ -8,7 +8,6 @@
 
 use std::collections::hash_map::Iter;
 use std::collections::HashMap;
-//use std::collections::hash_map::IntoIter;
 use std::iter::FromIterator;
 use std::error::Error;
 use std::fmt;
