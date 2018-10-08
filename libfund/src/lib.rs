@@ -42,7 +42,7 @@ impl FundManager {
             .write(true)
             .create(true)
             .open(&fundfile)?;
-        let mut funds: HashMap<String, Fund> = HashMap::new();
+        let mut funds: Vec<(String, Fund)> = Vec::new();
         let buf_reader = BufReader::new(file);
 
         for line in buf_reader.lines() {
@@ -63,10 +63,10 @@ impl FundManager {
                 Ok(goal) => goal,
                 Err(e) => return Err(From::from(format!("while parsing {:?}: {}", fundfile, e))),
             };
-            funds.insert(name, Fund { amount, goal });
+            funds.push((name, Fund::new().with_amount(amount).with_goal(goal).build()));
         }
 
-        Ok(FundManager { funds })
+        Ok(funds.into_iter().collect())
     }
 
     /// Saves FundManager to a file and Returns either the unit type or an Error
