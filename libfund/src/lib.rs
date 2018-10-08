@@ -8,6 +8,7 @@
 
 use std::collections::HashMap;
 use std::collections::hash_map::IntoIter;
+use std::iter::FromIterator;
 use std::error::Error;
 use std::fmt;
 use std::fs;
@@ -171,6 +172,17 @@ impl IntoIterator for FundManager {
 
     fn into_iter(self) -> Self::IntoIter {
         self.funds.into_iter()
+    }
+}
+
+impl FromIterator<(String, Fund)> for FundManager {
+
+    fn from_iter<I: IntoIterator<Item=(String, Fund)>>(iter: I) -> Self {
+        let mut funds: HashMap<String, Fund> = HashMap::new();
+        for fund in iter {
+            funds.insert(fund.0, fund.1);
+        }
+        FundManager{ funds }
     }
 }
 
