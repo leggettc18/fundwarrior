@@ -7,6 +7,7 @@
 //! example.
 
 use std::collections::HashMap;
+use std::collections::hash_map::IntoIter;
 use std::error::Error;
 use std::fmt;
 use std::fs;
@@ -127,8 +128,8 @@ impl FundManager {
 
     /// Prints information about all funds the FundManager is currently
     /// storing
-    pub fn print_all(&self) {
-        for fund in &self.funds {
+    pub fn print_all(self) {
+        for fund in self {
             let mut name = fund.0.to_owned();
             name.push(':');
             println!("{:>10} {}", name, fund.1)
@@ -161,6 +162,15 @@ impl FundManager {
         self.funds
             .insert(String::from(name), fund);
         Ok(())
+    }
+}
+
+impl IntoIterator for FundManager {
+    type Item = (String, Fund);
+    type IntoIter = IntoIter<String, Fund>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.funds.into_iter()
     }
 }
 

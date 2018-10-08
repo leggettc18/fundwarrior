@@ -86,8 +86,11 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
 
     match config.command.as_str() {
         "info" => match config.fund_name {
-            Some(name) => funds.print_fund(&name)?,
-            None => funds.print_all(),
+            Some(name) => funds.print_fund(&name),
+            None => {
+                funds.print_all();
+                Ok(())
+            },
         },
         "new" => match config.fund_name {
             Some(name) => {
@@ -101,6 +104,7 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
                 let fund = fund.build();
                 funds.add_fund(&name, fund)?;
                 funds.print_fund(&name)?;
+                funds.save(&config.fundfile)
             }
             None => return Err(From::from("can't create a new struct with no name")),
         },
@@ -109,6 +113,7 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
                 Some(amount) => {
                     funds.get_fund_by_name(&name)?.spend(amount);
                     funds.print_fund(&name)?;
+                    funds.save(&config.fundfile)
                 }
                 None => return Err(From::from("please supply an amount to spend")),
             },
@@ -119,6 +124,7 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
                 Some(amount) => {
                     funds.get_fund_by_name(&name)?.deposit(amount);
                     funds.print_fund(&name)?;
+                    funds.save(&config.fundfile)
                 }
                 None => return Err(From::from("please supply an amount to deposit")),
             },
@@ -132,6 +138,7 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
                         funds.get_fund_by_name(&transfer_name)?.deposit(amount);
                         funds.print_fund(&name)?;
                         funds.print_fund(&transfer_name)?;
+                        funds.save(&config.fundfile)
                     }
                     None => return Err(From::from("please supply an amount to transfer")),
                 },
@@ -142,5 +149,5 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
         _ => return Err(From::from("not a valid command")),
     }
 
-    funds.save(&config.fundfile)
+    
 }
