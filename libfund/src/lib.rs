@@ -23,6 +23,10 @@ pub struct FundManager {
 }
 
 impl FundManager {
+
+    pub fn new() -> FundManager {
+        FundManager{ funds: HashMap::new() }
+    }
     /// Returns a new FundManager based on the contents of the
     /// specified file
     /// 
@@ -102,10 +106,69 @@ impl FundManager {
     /// # Errors
     /// 
     /// * When the fund cannot be found
+    #[deprecated(since="0.8.0", note="please use `fund` or `fund_mut` instead")]
     pub fn get_fund_by_name(&mut self, name: &str) -> Result<&mut Fund, &'static str> {
         match self.funds.get_mut(name) {
             Some(fund) => Ok(fund),
             None => Err("cannot find the fund"),
+        }
+    }
+
+    /// Takes the name of a `Fund` and returns a reference to it, or an
+    /// Error if the `Fund` does not exist
+    ///
+    /// # Arguments
+    /// 
+    /// * `name` - a string slice containing the name of the `Fund` you want
+    /// 
+    /// # Errors
+    /// 
+    /// * When the `Fund` cannot be found
+    /// 
+    /// # Example
+    /// ```
+    /// use libfund::{Fund, FundManager};
+    /// 
+    /// let mut funds = FundManager::new();
+    /// funds.add_fund("test", Fund::new().with_amount(100).with_goal(500).build());
+    /// let fund = funds.fund("test").unwrap();
+    /// assert_eq!(fund.amount, 100);
+    /// assert_eq!(fund.goal, 500);
+    /// ```
+    pub fn fund(&self, name: &str) -> Result<&Fund, Box<Error + Send + Sync>> {
+        match self.funds.get(name) {
+            Some(fund) => Ok(fund),
+            None => Err(From::from("cannot find the fund")),
+        }
+    }
+
+    /// Takes the name of a `Fund` and returns a mutable reference to it, or
+    /// an Error if the `Fund` does not exist
+    /// 
+    /// # Arguments
+    /// 
+    /// * `name` - a string slice containing the name of the `Fund` you want
+    /// 
+    /// # Errors
+    /// 
+    /// * When the `Fund` cannot be found
+    /// 
+    /// # Example
+    /// ```
+    /// use libfund::{Fund, FundManager};
+    /// 
+    /// let mut funds = FundManager::new();
+    /// funds.add_fund("test", Fund::new().with_amount(100).with_goal(500).build());
+    /// let mut fund = funds.fund_mut("test").unwrap();
+    /// assert_eq!(fund.amount, 100);
+    /// assert_eq!(fund.goal, 500);
+    /// fund.amount = 200;
+    /// assert_eq!(fund.amount, 200);
+    /// ```
+    pub fn fund_mut(&mut self, name: &str) -> Result<&mut Fund, Box<Error + Send + Sync>> {
+        match self.funds.get_mut(name) {
+            Some(fund) => Ok(fund),
+            None => Err(From::from("cannot find the fund")),
         }
     }
 
@@ -120,7 +183,7 @@ impl FundManager {
     /// 
     /// * When the fund cannot be found
     pub fn print_fund(&mut self, name: &str) -> Result<(), Box<Error + Send + Sync>> {
-        let fund = self.get_fund_by_name(name)?;
+        let fund = self.fund(name)?;
         let mut name = String::from(name);
         name.push(':');
         println!("{:>10} {}", name, fund);
@@ -359,8 +422,18 @@ mod tests {
     fn getting_funds() {
         let mut funds = FundManager{ funds: HashMap::new() };
         funds.add_fund("Test", Fund::new().with_amount(100).with_goal(500).build()).unwrap();
-        assert!(funds.get_fund_by_name("Test").is_ok());
-        assert!(funds.get_fund_by_name("NotHere").is_err());
+        assert!(funds.fund("Test").is_ok());
+        assert!(funds.fund("NotHere").is_err());
+    }
+
+    #[test]
+    fn get_mutable() {
+        let mut funds = FundManager{ funds: HashMap::new() };
+        funds.add_fund("Test", Fund::new().with_amount(100).with_goal(500).build()).unwrap();
+        assert!(funds.fund("Test").is_ok());
+        assert!(funds.fund("NotHere").is_err());
+        funds.fund_mut("Test").unwrap().amount = 200;
+        assert_eq!(funds.fund("Test").unwrap().amount, 200);
     }
 
     #[test]
