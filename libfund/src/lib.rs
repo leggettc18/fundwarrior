@@ -227,6 +227,27 @@ impl FundManager {
             .insert(String::from(name), fund);
         Ok(())
     }
+
+    /// Renames a fund from old_name to new_name. Returns an Error if either the new
+    /// name is already in the FundManager or the old name wasn't found.
+    /// 
+    /// # Examples
+    /// ```
+    /// use libfund::{Fund, FundManager};
+    /// 
+    /// let mut funds = FundManager::new();
+    /// funds.add_fund("test", Fund::new().with_amount(100).with_goal(200).build());
+    /// funds.rename("test", "success");
+    /// assert!(funds.fund("test").is_err());
+    /// assert!(funds.fund("success").is_ok());
+    /// ```
+    pub fn rename(&mut self, old_name: &str, new_name: &str) -> Result<(), Box<Error+Send+Sync>> {
+        match self.funds.remove(old_name) {
+            Some(fund) => self.add_fund(new_name, fund)?,
+            None => return Err(From::from("cannot find a fund by that name")),
+        };
+        Ok(())
+    }
 }
 
 impl<'a> IntoIterator for &'a FundManager {
@@ -445,5 +466,18 @@ mod tests {
         let funds = result.unwrap();
         let result = funds.save(&test_data);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn renames_fund() {
+        let mut funds = FundManager::new();
+        funds.add_fund("test", Fund::new().with_amount(100).with_goal(200).build()).unwrap();
+        funds.rename("test", "success").unwrap();
+        assert!(funds.fund("test").is_err());
+        assert!(funds.fund("success").is_ok());
+        assert!(funds.rename("test", "success").is_err());
+        funds.add_fund("test", Fund::new().with_amount(100).with_goal(200).build()).unwrap();
+        assert!(funds.rename("success", "test").is_err());
+
     }
 }

@@ -13,6 +13,7 @@ pub struct Config {
     pub command: String,
     pub fund_name: Option<String>,
     pub transfer_name: Option<String>,
+    pub field: Option<String>,
     pub amount: Option<i32>,
     pub goal: Option<i32>,
 }
@@ -37,6 +38,7 @@ impl Config {
         let mut amount = None;
         let mut goal = None;
         let mut transfer_name = None;
+        let mut field = None;
 
         match matches.subcommand() {
             ("new", Some(new_matches)) => {
@@ -60,12 +62,22 @@ impl Config {
                 transfer_name = list_matches.value_of("to_name");
                 amount = list_matches.value_of("amount");
             }
+            ("rename", Some(list_matches)) => {
+                fund_name = list_matches.value_of("old_name");
+                transfer_name = list_matches.value_of("new_name");
+            }
+            ("set", Some(list_matches)) => {
+                fund_name = list_matches.value_of("name");
+                amount = list_matches.value_of("amount");
+                field = list_matches.value_of("field");
+            }
             ("", None) => command = String::from("info"),
             _ => unreachable!(),
         }
 
         let fund_name = fund_name.and_then(|x| Some(String::from(x)));
         let transfer_name = transfer_name.and_then(|x| Some(String::from(x)));
+        let field = field.and_then(|x| Some(String::from(x)));
         let amount = amount.map_or(Ok(None), |x| x.replace(".", "").parse::<i32>().map(Some))?;
         let goal = goal.map_or(Ok(None), |x| x.replace(".", "").parse::<i32>().map(Some))?;
 
@@ -75,6 +87,7 @@ impl Config {
             command,
             fund_name,
             transfer_name,
+            field,
             amount,
             goal,
         })
@@ -138,6 +151,33 @@ pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
                 None => return Err(From::from("please supply a fund to transfer to")),
             },
             None => return Err(From::from("please supply a fund to transfer from")),
+        },
+        "rename" => match config.fund_name {
+            Some(name) => match config.transfer_name {
+                Some(transfer_name) => {
+                    funds.rename(&name, &transfer_name)?;
+                    funds.print_fund(&transfer_name)?;
+                },
+                None => return Err(From::from("please supply a new unique name")),
+            },
+            None => return Err(From::from("please supply the name of the fund to rename")),
+        },
+        "set" => match config.fund_name {
+            Some(name) => match config.amount {
+                Some(amount) => match config.field {
+                    Some(field) => {
+                        match field.as_str() {
+                            "amount" => funds.fund_mut(&name)?.amount = amount,
+                            "goal" => funds.fund_mut(&name)?.goal = amount,
+                            _ => return Err(From::from("invalid field name")),
+                        };
+                        funds.print_fund(&name)?;
+                    },
+                    None => return Err(From::from("please provide a field name")),
+                },
+                None => return Err(From::from("please provide an amount")),
+            },
+            None => return Err(From::from("please provide a fund name")),
         },
         _ => return Err(From::from("not a valid command")),
     }
