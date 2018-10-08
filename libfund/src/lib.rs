@@ -178,7 +178,7 @@ impl IntoIterator for FundManager {
 impl FromIterator<(String, Fund)> for FundManager {
 
     fn from_iter<I: IntoIterator<Item=(String, Fund)>>(iter: I) -> Self {
-        let mut funds: HashMap<String, Fund> = HashMap::new();
+        let mut funds = HashMap::new();
         for fund in iter {
             funds.insert(fund.0, fund.1);
         }
