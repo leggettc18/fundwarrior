@@ -427,6 +427,16 @@ mod tests {
     }
 
     #[test]
+    fn get_mutable() {
+        let mut funds = FundManager{ funds: HashMap::new() };
+        funds.add_fund("Test", Fund::new().with_amount(100).with_goal(500).build()).unwrap();
+        assert!(funds.fund("Test").is_ok());
+        assert!(funds.fund("NotHere").is_err());
+        funds.fund_mut("Test").unwrap().amount = 200;
+        assert_eq!(funds.fund("Test").unwrap().amount, 200);
+    }
+
+    #[test]
     fn load_and_save() {
         let mut test_data = env::current_dir().unwrap();
         test_data.push(r"test_data/fund");
