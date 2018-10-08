@@ -6,8 +6,9 @@
 //! I or anyone else wished to make a GUI version of FundWarrior for
 //! example.
 
+use std::collections::hash_map::Iter;
 use std::collections::HashMap;
-use std::collections::hash_map::IntoIter;
+//use std::collections::hash_map::IntoIter;
 use std::iter::FromIterator;
 use std::error::Error;
 use std::fmt;
@@ -81,7 +82,7 @@ impl FundManager {
     /// could not be created
     /// * When the 'fund' file could not be created or opened
     /// * When the 'fund' file could not be written to
-    pub fn save(self, fundfile: &Path) -> Result<(), Box<Error + Send + Sync>> {
+    pub fn save(&self, fundfile: &Path) -> Result<(), Box<Error + Send + Sync>> {
         fs::create_dir_all(fundfile.parent().unwrap_or(fundfile))?;
         let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
         let mut buf_writer = BufWriter::new(file);
@@ -129,7 +130,7 @@ impl FundManager {
 
     /// Prints information about all funds the FundManager is currently
     /// storing
-    pub fn print_all(self) {
+    pub fn print_all(&self) {
         for fund in self {
             let mut name = fund.0.to_owned();
             name.push(':');
@@ -166,12 +167,12 @@ impl FundManager {
     }
 }
 
-impl IntoIterator for FundManager {
-    type Item = (String, Fund);
-    type IntoIter = IntoIter<String, Fund>;
+impl<'a> IntoIterator for &'a FundManager {
+    type Item = (&'a String, &'a Fund);
+    type IntoIter = Iter<'a, String, Fund>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.funds.into_iter()
+        self.funds.iter()
     }
 }
 
