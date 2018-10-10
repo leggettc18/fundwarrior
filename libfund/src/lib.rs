@@ -5,6 +5,12 @@
 //! it into a separate library to make it easier to reuse later, if
 //! I or anyone else wished to make a GUI version of FundWarrior for
 //! example.
+//! 
+//! ## Warning
+//! 
+//! The `FundManager` struct implements `Extend`, but it has a caveat.
+//! Any `Fund`s in the supplied iterator that have the same name as any
+//! existing `Fund` will be ignored.
 
 use std::collections::hash_map::{Iter, IterMut};
 use std::collections::HashMap;
