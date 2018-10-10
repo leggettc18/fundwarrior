@@ -17,6 +17,7 @@ use std::io::{BufReader, BufWriter};
 use std::iter::FromIterator;
 use std::path::Path;
 
+/// The error returned when a fund could not be found
 #[derive(Debug)]
 pub struct FundNotFoundError {
     name: String,
@@ -34,6 +35,8 @@ impl Error for FundNotFoundError {
     }
 }
 
+/// The error returned when attempting to create or rename a
+/// fund to a name that already exists
 #[derive(Debug)]
 pub struct DuplicateFundError {
     name: String,
@@ -55,6 +58,9 @@ impl Error for DuplicateFundError {
     }
 }
 
+/// A wrapper around FundNotFoundError, DuplicateFundError,
+/// and std::io::Error. This is used in the load and save
+/// functions where all three of these errors could happen.
 #[derive(Debug)]
 pub enum FundManagerError {
     FundNotFound(FundNotFoundError),
