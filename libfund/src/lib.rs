@@ -59,8 +59,9 @@ impl Error for DuplicateFundError {
 }
 
 /// A wrapper around FundNotFoundError, DuplicateFundError,
-/// and std::io::Error. This is used in the load and save
-/// functions where all three of these errors could happen.
+/// and std::io::Error. This is used in the save and rename
+/// functions where, between the two of them,
+/// all three of these errors could happen.
 #[derive(Debug)]
 pub enum FundManagerError {
     FundNotFound(FundNotFoundError),
