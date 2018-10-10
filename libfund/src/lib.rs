@@ -129,7 +129,7 @@ impl FundManager {
     /// * When the directories could not be created
     /// * When the file could not be opened
     /// * When the file could not be parsed correctly
-    pub fn load(fundfile: &Path) -> Result<FundManager, FundManagerError> {
+    pub fn load(fundfile: &Path) -> Result<FundManager, std::io::Error> {
         fs::create_dir_all(fundfile.parent().unwrap_or(fundfile))?;
         let file = OpenOptions::new()
             .read(true)
