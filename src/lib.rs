@@ -100,8 +100,8 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
 
     match config.command.as_str() {
         "info" => match config.fund_name {
-            Some(name) => funds.print_fund(&name)?,
-            None => funds.print_all(),
+            Some(name) => print_fund(&funds, &name)?,
+            None => print_all(&funds),
         },
         "new" => match config.fund_name {
             Some(name) => {
@@ -114,7 +114,7 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
                 }
                 let fund = fund.build();
                 funds.add_fund(&name, fund)?;
-                funds.print_fund(&name)?;
+                print_fund(&funds, &name)?;
             }
             None => {
                 return Err(From::from(io::Error::new(
@@ -127,7 +127,7 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
             Some(name) => match config.amount {
                 Some(amount) => {
                     funds.fund_mut(&name)?.spend(amount);
-                    funds.print_fund(&name)?;
+                    print_fund(&funds, &name)?;
                 }
                 None => {
                     return Err(From::from(io::Error::new(
@@ -147,7 +147,7 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
             Some(name) => match config.amount {
                 Some(amount) => {
                     funds.fund_mut(&name)?.deposit(amount);
-                    funds.print_fund(&name)?;
+                    print_fund(&funds, &name)?;
                 }
                 None => {
                     return Err(From::from(io::Error::new(
@@ -169,8 +169,8 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
                     Some(amount) => {
                         funds.fund_mut(&name)?.spend(amount);
                         funds.fund_mut(&transfer_name)?.deposit(amount);
-                        funds.print_fund(&name)?;
-                        funds.print_fund(&transfer_name)?;
+                        print_fund(&funds, &name)?;
+                        print_fund(&funds, &transfer_name)?;
                     }
                     None => {
                         return Err(From::from(io::Error::new(
@@ -197,7 +197,7 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
             Some(name) => match config.transfer_name {
                 Some(transfer_name) => {
                     funds.rename(&name, &transfer_name)?;
-                    funds.print_fund(&transfer_name)?;
+                    print_fund(&funds, &transfer_name)?;
                 }
                 None => {
                     return Err(From::from(io::Error::new(
@@ -227,7 +227,7 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
                                 )))
                             }
                         };
-                        funds.print_fund(&name)?;
+                        print_fund(&funds, &name)?;
                     }
                     None => {
                         return Err(From::from(io::Error::new(
@@ -259,4 +259,20 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
     }
     funds.save(&config.fundfile)?;
     Ok(())
+}
+
+pub fn print_fund(funds: &libfund::FundManager, name: &str) -> Result<(), libfund::FundNotFoundError> {
+    let fund = funds.fund(name)?;
+    let mut name = String::from(name);
+    name.push(':');
+    println!("{:>10} {}", name, fund);
+    Ok(())
+}
+
+pub fn print_all(funds: &libfund::FundManager) {
+    for fund in funds.into_iter() {
+        let mut name = fund.0.to_owned();
+        name.push(':');
+        println!("{:>10} {}", name, fund.1)
+    }
 }

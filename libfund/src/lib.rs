@@ -62,7 +62,7 @@ impl Error for DuplicateFundError {
 /// and std::io::Error. Useful for binary crates dealing with
 /// `FundManager`s, as they may need to deal with any combination
 /// of these errors at once.
-/// 
+///
 #[derive(Debug)]
 pub enum FundManagerError {
     FundNotFound(FundNotFoundError),
@@ -292,6 +292,12 @@ impl FundManager {
         }
     }
 
+    #[deprecated(
+        since = "0.8.0",
+        note = "Slated for removal in 1.0.0, please use the getter functions to get the values 
+        you want and the `Display` trait on `Fund` and the `display_dollars` function to get the 
+        information you want."
+    )]
     /// Prints information about the fund with the given name to stdout, or returns an
     /// Error if the fund could not be found
     ///
@@ -310,6 +316,12 @@ impl FundManager {
         Ok(())
     }
 
+    #[deprecated(
+        since = "0.8.0",
+        note = "Slated for removal in 1.0.0, please use the `into_iter` method on `FundManger`,
+        the `Display` trait on `Fund`, and the `display_dollars` helper function to get the
+        information you want."
+    )]
     /// Prints information about all funds the FundManager is currently
     /// storing
     pub fn print_all(&self) {
