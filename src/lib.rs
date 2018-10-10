@@ -257,5 +257,6 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
             )))
         }
     }
-    funds.save(&config.fundfile)
+    funds.save(&config.fundfile)?;
+    Ok(())
 }

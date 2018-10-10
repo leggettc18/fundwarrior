@@ -59,9 +59,10 @@ impl Error for DuplicateFundError {
 }
 
 /// A wrapper around FundNotFoundError, DuplicateFundError,
-/// and std::io::Error. This is used in the save and rename
-/// functions where, between the two of them,
-/// all three of these errors could happen.
+/// and std::io::Error. Useful for binary crates dealing with
+/// `FundManager`s, as they may need to deal with any combination
+/// of these errors at once.
+/// 
 #[derive(Debug)]
 pub enum FundManagerError {
     FundNotFound(FundNotFoundError),
@@ -197,7 +198,7 @@ impl FundManager {
     /// could not be created
     /// * When the 'fund' file could not be created or opened
     /// * When the 'fund' file could not be written to
-    pub fn save(&self, fundfile: &Path) -> Result<(), FundManagerError> {
+    pub fn save(&self, fundfile: &Path) -> Result<(), std::io::Error> {
         fs::create_dir_all(fundfile.parent().unwrap_or(fundfile))?;
         let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
         let mut buf_writer = BufWriter::new(file);
