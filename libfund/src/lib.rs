@@ -12,6 +12,7 @@
 //! Any `Fund`s in the supplied iterator that have the same name as any
 //! existing `Fund` will be ignored.
 
+use std::cmp::Ordering;
 use std::collections::hash_map::{Iter, IterMut};
 use std::collections::HashMap;
 use std::error::Error;
@@ -115,6 +116,7 @@ impl From<std::io::Error> for FundManagerError {
 }
 
 /// Manages storage and retrieval of Funds
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct FundManager {
     funds: HashMap<String, Fund>,
 }
@@ -441,10 +443,22 @@ impl FromIterator<(String, Fund)> for FundManager {
 }
 
 /// Stores and manipulates a running balance and goal to shoot for
-#[derive(Debug, Default, PartialEq, Copy, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct Fund {
     pub amount: i32,
     pub goal: i32,
+}
+
+impl PartialOrd for Fund {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.amount.cmp(&other.amount))
+    }
+}
+
+impl Ord for Fund {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.amount.cmp(&other.amount)
+    }
 }
 
 impl Fund {
