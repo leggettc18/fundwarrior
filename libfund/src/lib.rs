@@ -398,6 +398,19 @@ impl<'a> IntoIterator for &'a mut FundManager {
     }
 }
 
+impl Extend<(String, Fund)> for FundManager {
+    fn extend<I: IntoIterator<Item = (String, Fund)>>(&mut self, iter: I) {
+        //! Extends a collection with the contents of an iterator. 
+        //! 
+        //! Warning!: Does not add funds that have the same name as previously existing funds.
+        for fund in iter {
+            if !self.funds.contains_key(&fund.0) {
+                self.add_fund(&fund.0, fund.1).unwrap();
+            }
+        }
+    }
+}
+
 impl FromIterator<(String, Fund)> for FundManager {
     fn from_iter<I: IntoIterator<Item = (String, Fund)>>(iter: I) -> Self {
         let mut funds = HashMap::new();
