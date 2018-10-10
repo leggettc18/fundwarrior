@@ -24,13 +24,30 @@ pub struct FundNotFoundError {
 
 impl fmt::Display for FundNotFoundError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!{f, "fund '{}' not found", self.name}
+        write!(f, "fund '{}' not found", self.name)
     }
 }
 
 impl Error for FundNotFoundError {
     fn description(&self) -> &str {
         "fund was not found"
+    }
+}
+
+#[derive(Debug)]
+pub struct DuplicateFundError {
+    name: String,
+}
+
+impl fmt::Display for DuplicateFundError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "fund '{}' already exists. Please choose a different name", self.name)
+    }
+}
+
+impl Error for DuplicateFundError {
+    fn description(&self) -> &str {
+        "funds must have unique names"
     }
 }
 
