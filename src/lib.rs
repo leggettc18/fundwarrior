@@ -3,8 +3,8 @@ extern crate dirs;
 extern crate libfund;
 
 use std::error::Error;
-use std::path::PathBuf;
 use std::io;
+use std::path::PathBuf;
 
 use clap::ArgMatches;
 
@@ -30,7 +30,7 @@ impl Config {
         };
         let mut fundfile = match dirs::data_dir() {
             Some(data_dir) => data_dir,
-            None => return Err(From::from("can't use this directory"))
+            None => return Err(From::from("can't use this directory")),
         };
         fundfile.push("fund/fund");
 
@@ -116,7 +116,12 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
                 funds.add_fund(&name, fund)?;
                 funds.print_fund(&name)?;
             }
-            None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "can't create a new struct with no name"))),
+            None => {
+                return Err(From::from(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "can't create a new struct with no name",
+                )))
+            }
         },
         "spend" => match config.fund_name {
             Some(name) => match config.amount {
@@ -124,9 +129,19 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
                     funds.fund_mut(&name)?.spend(amount);
                     funds.print_fund(&name)?;
                 }
-                None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please supply an amount to spend"))),
+                None => {
+                    return Err(From::from(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "please supply an amount to spend",
+                    )))
+                }
             },
-            None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please supply a fund to spend from"))),
+            None => {
+                return Err(From::from(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "please supply a fund to spend from",
+                )))
+            }
         },
         "deposit" => match config.fund_name {
             Some(name) => match config.amount {
@@ -134,9 +149,19 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
                     funds.fund_mut(&name)?.deposit(amount);
                     funds.print_fund(&name)?;
                 }
-                None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please supply an amount to deposit"))),
+                None => {
+                    return Err(From::from(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "please supply an amount to deposit",
+                    )))
+                }
             },
-            None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please supply a fund to deposit to"))),
+            None => {
+                return Err(From::from(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "please supply a fund to deposit to",
+                )))
+            }
         },
         "transfer" => match config.fund_name {
             Some(name) => match config.transfer_name {
@@ -147,21 +172,46 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
                         funds.print_fund(&name)?;
                         funds.print_fund(&transfer_name)?;
                     }
-                    None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please supply an amount to transfer"))),
+                    None => {
+                        return Err(From::from(io::Error::new(
+                            io::ErrorKind::InvalidInput,
+                            "please supply an amount to transfer",
+                        )))
+                    }
                 },
-                None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please supply a fund to transfer to"))),
+                None => {
+                    return Err(From::from(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "please supply a fund to transfer to",
+                    )))
+                }
             },
-            None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please supply a fund to transfer from"))),
+            None => {
+                return Err(From::from(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "please supply a fund to transfer from",
+                )))
+            }
         },
         "rename" => match config.fund_name {
             Some(name) => match config.transfer_name {
                 Some(transfer_name) => {
                     funds.rename(&name, &transfer_name)?;
                     funds.print_fund(&transfer_name)?;
-                },
-                None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please supply a new unique name"))),
+                }
+                None => {
+                    return Err(From::from(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "please supply a new unique name",
+                    )))
+                }
             },
-            None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please supply the name of the fund to rename"))),
+            None => {
+                return Err(From::from(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "please supply the name of the fund to rename",
+                )))
+            }
         },
         "set" => match config.fund_name {
             Some(name) => match config.amount {
@@ -170,17 +220,42 @@ pub fn run(config: Config) -> Result<(), libfund::FundManagerError> {
                         match field.as_str() {
                             "amount" => funds.fund_mut(&name)?.amount = amount,
                             "goal" => funds.fund_mut(&name)?.goal = amount,
-                            _ => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "invalid field name"))),
+                            _ => {
+                                return Err(From::from(io::Error::new(
+                                    io::ErrorKind::InvalidInput,
+                                    "invalid field name",
+                                )))
+                            }
                         };
                         funds.print_fund(&name)?;
-                    },
-                    None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please provide a field name"))),
+                    }
+                    None => {
+                        return Err(From::from(io::Error::new(
+                            io::ErrorKind::InvalidInput,
+                            "please provide a field name",
+                        )))
+                    }
                 },
-                None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please provide an amount"))),
+                None => {
+                    return Err(From::from(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "please provide an amount",
+                    )))
+                }
             },
-            None => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "please provide a fund name"))),
+            None => {
+                return Err(From::from(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "please provide a fund name",
+                )))
+            }
         },
-        _ => return Err(From::from(io::Error::new(io::ErrorKind::InvalidInput, "not a valid command"))),
+        _ => {
+            return Err(From::from(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "not a valid command",
+            )))
+        }
     }
     funds.save(&config.fundfile)
 }
