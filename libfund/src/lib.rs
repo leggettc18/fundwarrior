@@ -442,7 +442,7 @@ impl FromIterator<(String, Fund)> for FundManager {
 }
 
 /// Stores and manipulates a running balance and goal to shoot for
-#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct Fund {
     pub amount: i32,
     pub goal: i32,
