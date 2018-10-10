@@ -199,7 +199,7 @@ impl FundManager {
     /// # Errors
     /// 
     /// * When the fund cannot be found
-    pub fn print_fund(&mut self, name: &str) -> Result<(), Box<Error>> {
+    pub fn print_fund(&mut self, name: &str) -> Result<(), FundNotFoundError> {
         let fund = self.fund(name)?;
         let mut name = String::from(name);
         name.push(':');
