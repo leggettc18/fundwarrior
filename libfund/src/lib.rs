@@ -250,12 +250,9 @@ impl FundManager {
         &mut self,
         name: &str,
         fund: Fund
-    ) -> Result<(), Box<Error>> {
+    ) -> Result<(), DuplicateFundError> {
         if self.funds.contains_key(name) {
-            return Err(From::from(format!(
-                "fund '{}' already exists. Please choose a different name",
-                name
-            )));
+            return Err(DuplicateFundError{ name: String::from(name) });
         }
         self.funds
             .insert(String::from(name), fund);
