@@ -17,6 +17,23 @@ use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
+#[derive(Debug)]
+pub struct FundNotFoundError {
+    name: String,
+}
+
+impl fmt::Display for FundNotFoundError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!{f, "fund '{}' not found", self.name}
+    }
+}
+
+impl Error for FundNotFoundError {
+    fn description(&self) -> &str {
+        "fund was not found"
+    }
+}
+
 /// Manages storage and retrieval of Funds
 pub struct FundManager {
     funds: HashMap<String, Fund>,
@@ -135,10 +152,10 @@ impl FundManager {
     /// assert_eq!(fund.amount, 100);
     /// assert_eq!(fund.goal, 500);
     /// ```
-    pub fn fund(&self, name: &str) -> Result<&Fund, Box<Error>> {
+    pub fn fund(&self, name: &str) -> Result<&Fund, FundNotFoundError> {
         match self.funds.get(name) {
             Some(fund) => Ok(fund),
-            None => Err(From::from("cannot find the fund")),
+            None => Err(FundNotFoundError{name: String::from(name)}),
         }
     }
 
@@ -165,10 +182,10 @@ impl FundManager {
     /// fund.amount = 200;
     /// assert_eq!(fund.amount, 200);
     /// ```
-    pub fn fund_mut(&mut self, name: &str) -> Result<&mut Fund, Box<Error>> {
+    pub fn fund_mut(&mut self, name: &str) -> Result<&mut Fund, FundNotFoundError> {
         match self.funds.get_mut(name) {
             Some(fund) => Ok(fund),
-            None => Err(From::from("cannot find the fund")),
+            None => Err(FundNotFoundError{name: String::from(name)}),
         }
     }
 
