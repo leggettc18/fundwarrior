@@ -51,6 +51,51 @@ impl Error for DuplicateFundError {
     }
 }
 
+#[derive(Debug)]
+pub enum FundManagerError {
+    FundNotFound(FundNotFoundError),
+    DuplicateFund(DuplicateFundError),
+    Io(std::io::Error),
+}
+
+impl fmt::Display for FundManagerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            FundManagerError::FundNotFound(ref e) => e.fmt(f),
+            FundManagerError::DuplicateFund(ref e) => e.fmt(f),
+            FundManagerError::Io(ref e) => e.fmt(f),
+        }
+    }
+}
+
+impl Error for FundManagerError {
+    fn description(&self) -> &str {
+        match *self {
+            FundManagerError::FundNotFound(ref e) => e.description(),
+            FundManagerError::DuplicateFund(ref e) => e.description(),
+            FundManagerError::Io(ref e) => e.description(),
+        }
+    }
+}
+
+impl From<FundNotFoundError> for FundManagerError {
+    fn from(err: FundNotFoundError) -> FundManagerError {
+        FundManagerError::FundNotFound(err)
+    }
+}
+
+impl From<DuplicateFundError> for FundManagerError {
+    fn from(err: DuplicateFundError) -> FundManagerError {
+        FundManagerError::DuplicateFund(err)
+    }
+}
+
+impl From<std::io::Error> for FundManagerError {
+    fn from(err: std::io::Error) -> FundManagerError {
+        FundManagerError::Io(err)
+    }
+}
+
 /// Manages storage and retrieval of Funds
 pub struct FundManager {
     funds: HashMap<String, Fund>,
@@ -73,7 +118,7 @@ impl FundManager {
     /// * When the directories could not be created
     /// * When the file could not be opened
     /// * When the file could not be parsed correctly
-    pub fn load(fundfile: &Path) -> Result<FundManager, Box<Error>> {
+    pub fn load(fundfile: &Path) -> Result<FundManager, FundManagerError> {
         fs::create_dir_all(fundfile.parent().unwrap_or(fundfile))?;
         let file = OpenOptions::new()
             .read(true)
@@ -87,19 +132,19 @@ impl FundManager {
             let line = line?;
             let fund_info: Vec<&str> = line.split_terminator(':').collect();
             if fund_info.len() < 3 {
-                return Err(From::from(format!("{:?} is invalid", fundfile)));
+                return Err(From::from(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("{:?} is invalid", fundfile))));
             }
             let name = match fund_info[0].parse() {
                 Ok(name) => name,
-                Err(e) => return Err(From::from(format!("while parsing {:?}: {}", fundfile, e))),
+                Err(e) => return Err(From::from(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("while parsing {:?}: {}", fundfile, e)))),
             };
             let amount: i32 = match fund_info[1].parse() {
                 Ok(amount) => amount,
-                Err(e) => return Err(From::from(format!("while parsing {:?}: {}", fundfile, e))),
+                Err(e) => return Err(From::from(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("while parsing {:?}: {}", fundfile, e)))),
             };
             let goal: i32 = match fund_info[2].parse() {
                 Ok(goal) => goal,
-                Err(e) => return Err(From::from(format!("while parsing {:?}: {}", fundfile, e))),
+                Err(e) => return Err(From::from(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("while parsing {:?}: {}", fundfile, e)))),
             };
             funds.push((name, Fund::new().with_amount(amount).with_goal(goal).build()));
         }
@@ -119,7 +164,7 @@ impl FundManager {
     /// could not be created
     /// * When the 'fund' file could not be created or opened
     /// * When the 'fund' file could not be written to
-    pub fn save(&self, fundfile: &Path) -> Result<(), Box<Error>> {
+    pub fn save(&self, fundfile: &Path) -> Result<(), FundManagerError> {
         fs::create_dir_all(fundfile.parent().unwrap_or(fundfile))?;
         let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
         let mut buf_writer = BufWriter::new(file);
@@ -272,10 +317,10 @@ impl FundManager {
     /// assert!(funds.fund("test").is_err());
     /// assert!(funds.fund("success").is_ok());
     /// ```
-    pub fn rename(&mut self, old_name: &str, new_name: &str) -> Result<(), Box<Error>> {
+    pub fn rename(&mut self, old_name: &str, new_name: &str) -> Result<(), FundManagerError> {
         match self.funds.remove(old_name) {
             Some(fund) => self.add_fund(new_name, fund)?,
-            None => return Err(From::from("cannot find a fund by that name")),
+            None => return Err(From::from(FundNotFoundError{ name: String::from(old_name) })),
         };
         Ok(())
     }
