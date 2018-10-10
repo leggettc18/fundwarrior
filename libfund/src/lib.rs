@@ -116,6 +116,7 @@ impl From<std::io::Error> for FundManagerError {
 }
 
 /// Manages storage and retrieval of Funds
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct FundManager {
     funds: HashMap<String, Fund>,
 }
