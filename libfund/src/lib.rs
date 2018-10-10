@@ -411,6 +411,19 @@ impl Extend<(String, Fund)> for FundManager {
     }
 }
 
+impl<'a> Extend<(&'a String, &'a Fund)> for FundManager {
+    fn extend<I: IntoIterator<Item = (&'a String, &'a Fund)>>(&mut self, iter: I) {
+        //! Extends a collection with the contents of an iterator.
+        //! 
+        //! Warning: Does not add funds that have the same name as previously existing funds.
+        for fund in iter {
+            if !self.funds.contains_key(fund.0) {
+                self.add_fund(&fund.0, *fund.1).unwrap();
+            }
+        }
+    }
+}
+
 impl FromIterator<(String, Fund)> for FundManager {
     fn from_iter<I: IntoIterator<Item = (String, Fund)>>(iter: I) -> Self {
         let mut funds = HashMap::new();
@@ -422,7 +435,7 @@ impl FromIterator<(String, Fund)> for FundManager {
 }
 
 /// Stores and manipulates a running balance and goal to shoot for
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Copy, Clone)]
 pub struct Fund {
     pub amount: i32,
     pub goal: i32,
