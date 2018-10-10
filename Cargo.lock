@@ -143,11 +143,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "fund"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "clap 2.32.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dirs 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "libfund 0.8.0",
+ "libfund 0.8.1",
 ]
 
 [[package]]
@@ -157,7 +157,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "libfund"
-version = "0.8.0"
+version = "0.8.1"
 
 [[package]]
 name = "nodrop"
