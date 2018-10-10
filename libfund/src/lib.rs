@@ -39,7 +39,7 @@ impl FundManager {
     /// * When the directories could not be created
     /// * When the file could not be opened
     /// * When the file could not be parsed correctly
-    pub fn load(fundfile: &Path) -> Result<FundManager, Box<Error + Send + Sync>> {
+    pub fn load(fundfile: &Path) -> Result<FundManager, Box<Error>> {
         fs::create_dir_all(fundfile.parent().unwrap_or(fundfile))?;
         let file = OpenOptions::new()
             .read(true)
@@ -85,7 +85,7 @@ impl FundManager {
     /// could not be created
     /// * When the 'fund' file could not be created or opened
     /// * When the 'fund' file could not be written to
-    pub fn save(&self, fundfile: &Path) -> Result<(), Box<Error + Send + Sync>> {
+    pub fn save(&self, fundfile: &Path) -> Result<(), Box<Error>> {
         fs::create_dir_all(fundfile.parent().unwrap_or(fundfile))?;
         let file = OpenOptions::new().write(true).create(true).open(fundfile)?;
         let mut buf_writer = BufWriter::new(file);
@@ -135,7 +135,7 @@ impl FundManager {
     /// assert_eq!(fund.amount, 100);
     /// assert_eq!(fund.goal, 500);
     /// ```
-    pub fn fund(&self, name: &str) -> Result<&Fund, Box<Error + Send + Sync>> {
+    pub fn fund(&self, name: &str) -> Result<&Fund, Box<Error>> {
         match self.funds.get(name) {
             Some(fund) => Ok(fund),
             None => Err(From::from("cannot find the fund")),
@@ -165,7 +165,7 @@ impl FundManager {
     /// fund.amount = 200;
     /// assert_eq!(fund.amount, 200);
     /// ```
-    pub fn fund_mut(&mut self, name: &str) -> Result<&mut Fund, Box<Error + Send + Sync>> {
+    pub fn fund_mut(&mut self, name: &str) -> Result<&mut Fund, Box<Error>> {
         match self.funds.get_mut(name) {
             Some(fund) => Ok(fund),
             None => Err(From::from("cannot find the fund")),
@@ -182,7 +182,7 @@ impl FundManager {
     /// # Errors
     /// 
     /// * When the fund cannot be found
-    pub fn print_fund(&mut self, name: &str) -> Result<(), Box<Error + Send + Sync>> {
+    pub fn print_fund(&mut self, name: &str) -> Result<(), Box<Error>> {
         let fund = self.fund(name)?;
         let mut name = String::from(name);
         name.push(':');
@@ -216,7 +216,7 @@ impl FundManager {
         &mut self,
         name: &str,
         fund: Fund
-    ) -> Result<(), Box<Error + Send + Sync>> {
+    ) -> Result<(), Box<Error>> {
         if self.funds.contains_key(name) {
             return Err(From::from(format!(
                 "fund '{}' already exists. Please choose a different name",
@@ -241,7 +241,7 @@ impl FundManager {
     /// assert!(funds.fund("test").is_err());
     /// assert!(funds.fund("success").is_ok());
     /// ```
-    pub fn rename(&mut self, old_name: &str, new_name: &str) -> Result<(), Box<Error+Send+Sync>> {
+    pub fn rename(&mut self, old_name: &str, new_name: &str) -> Result<(), Box<Error>> {
         match self.funds.remove(old_name) {
             Some(fund) => self.add_fund(new_name, fund)?,
             None => return Err(From::from("cannot find a fund by that name")),

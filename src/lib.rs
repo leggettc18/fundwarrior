@@ -94,7 +94,7 @@ impl Config {
     }
 }
 
-pub fn run(config: Config) -> Result<(), Box<Error + Send + Sync>> {
+pub fn run(config: Config) -> Result<(), Box<Error>> {
     let mut funds = libfund::FundManager::load(&config.fundfile)?;
 
     match config.command.as_str() {
