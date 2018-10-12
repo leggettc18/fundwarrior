@@ -33,6 +33,10 @@ impl Config {
             None => return Err(From::from("can't use this directory")),
         };
         fundfile.push("fund/fund");
+        
+        if let Some(path) = matches.value_of("fundfile") {
+            fundfile = PathBuf::from(path);
+        }
 
         let mut command = String::from(matches.subcommand().0);
         let mut fund_name = None;
